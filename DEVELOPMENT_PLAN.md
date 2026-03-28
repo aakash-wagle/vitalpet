@@ -5,15 +5,18 @@ Each phase is a self-contained unit of work. Each sprint is a single Cursor chat
 ---
 
 ## Phase 0 — Scaffold & Tooling
+
 **Goal:** Working Flutter project that compiles, with all dependencies, empty feature stubs, and the drift schema generated. No logic yet — just structure.
 
 **Duration estimate:** 2–3 hours  
 **Dependencies:** None
 
 ### Sprint 0.1 — Project scaffold
+
 **What gets built:** `pubspec.yaml`, `analysis_options.yaml`, `lib/main.dart`, all empty feature directories, empty stub files for every `.dart` file listed in `REPO_STRUCTURE.md`, `assets/config/` files with placeholder content.
 
 **Cursor prompt:**
+
 ```
 Read REPO_STRUCTURE.md in full. Then:
 
@@ -57,9 +60,11 @@ Report which files were created and the result of flutter pub get.
 ---
 
 ### Sprint 0.2 — Database schema and code generation
+
 **What gets built:** drift tables, DAOs, migrations, encryption service, audit log DAO — all generated and compiling.
 
 **Cursor prompt:**
+
 ```
 We are building VitalPet, a Flutter app. The database layer uses drift 2.x + sqlcipher_flutter_libs.
 
@@ -114,15 +119,18 @@ Fix any errors. Report the final analyze result.
 ---
 
 ## Phase 1 — Domain Logic (no UI)
+
 **Goal:** All pure Dart business logic implemented and tested. Nothing shown on screen yet.
 
 **Duration estimate:** 3–4 hours  
 **Dependencies:** Phase 0 complete, DB schema generated
 
 ### Sprint 1.1 — Check-in domain
+
 **What gets built:** `ModeSelector`, `VitalityCalculator`, `StreakManager`, `MilestoneDetector`, `CheckInSessionState`, and their unit tests.
 
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phase 0 (scaffold + DB schema) is complete.
 
@@ -168,9 +176,11 @@ Report test results. Fix any failures.
 ---
 
 ### Sprint 1.2 — SLM domain
+
 **What gets built:** `SLMClient`, `MedicalContentFilter`, `RuleBasedFallback`, `BaselineTracker`, `QuestionSequencer` stubs, and their unit tests.
 
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phase 0 complete, Sprint 1.1 (check-in + pet domain) complete.
 
@@ -216,13 +226,16 @@ Fix any failures. Report results.
 ---
 
 ## Phase 2 — Navigation & Shell
+
 **Goal:** App runs on device/simulator with navigation skeleton. No real data — placeholder screens.
 
 **Duration estimate:** 2 hours  
 **Dependencies:** Phase 1 complete
 
 ### Sprint 2.1 — Router, theme, and app shell
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–1 complete. Now build the navigation shell.
 
@@ -267,13 +280,16 @@ Fix any errors. Run: flutter analyze --no-pub
 ---
 
 ## Phase 3 — Pet Engine & Home Screen
+
 **Goal:** The pet lives on screen, animated with simple PNGs (slight rocking), streak visible, pet can die.
 
 **Duration estimate:** 3–4 hours  
 **Dependencies:** Phase 2 complete, PNG files (or SVGs) in assets/images/pets/
 
 ### Sprint 3.1 — Riverpod providers + PetRenderer
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–2 complete. Now build the pet engine and home screen.
 
@@ -325,13 +341,16 @@ Report results. Fix any failures.
 ---
 
 ## Phase 4 — Check-In Flow
+
 **Goal:** Full working check-in: Mode 1/2/3, SLM inference with fallback, partial session, body map, completion triggers pet update.
 
 **Duration estimate:** 5–6 hours  
 **Dependencies:** Phase 3 complete
 
 ### Sprint 4.1 — Check-in screens and session notifier
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–3 complete. Now build the full check-in flow.
 
@@ -388,13 +407,16 @@ Fix any errors. Report results.
 ---
 
 ## Phase 5 — Onboarding
+
 **Goal:** Complete onboarding flow: species selection, pet naming, loss mechanic explainer, notification permission, first check-in trigger.
 
 **Duration estimate:** 2–3 hours  
 **Dependencies:** Phase 4 complete
 
 ### Sprint 5.1 — Onboarding screens
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–4 complete. Now build the onboarding flow.
 
@@ -436,13 +458,16 @@ Test manually that full onboarding flow runs and pet appears on home screen afte
 ---
 
 ## Phase 6 — Doctor Handoff
+
 **Goal:** Complete PDF handoff: narrative, trend chart, heatmap, health correlation, share sheet.
 
 **Duration estimate:** 3–4 hours  
 **Dependencies:** Phases 1–5 complete (domain logic, check-in data exists in DB)
 
 ### Sprint 6.1 — Handoff PDF generation
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–5 complete.
 
@@ -489,13 +514,16 @@ Test manually: generate a handoff from the demo seed data. Verify PDF opens, sho
 ---
 
 ## Phase 7 — Notifications & Widgets
+
 **Goal:** Push notifications scheduled, home screen widgets showing pet + streak + sparkline.
 
 **Duration estimate:** 3–4 hours  
 **Dependencies:** Phase 6 complete
 
 ### Sprint 7.1 — Notifications
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–6 complete. Now implement notifications.
 
@@ -538,7 +566,9 @@ Test on device that primary notification fires at set time and critical fires im
 ---
 
 ### Sprint 7.2 — Home screen widgets (native)
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Sprint 7.1 (notifications) complete. Now build the home screen widgets.
 
@@ -573,13 +603,16 @@ Document any manual Xcode steps required (entitlements, target membership, etc.)
 ---
 
 ## Phase 8 — Settings, Data Management & Calm Mode
+
 **Goal:** Settings screen complete, data export, deletion with 7-day window, Calm Mode toggle.
 
 **Duration estimate:** 2–3 hours  
 **Dependencies:** Phases 0–7 complete
 
 ### Sprint 8.1 — Settings and data management
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–7 complete. Now build settings and data management.
 
@@ -623,13 +656,16 @@ Fix any errors. Report final results.
 ---
 
 ## Phase 9 — Demo Seed Data & Hackathon Polish
+
 **Goal:** Demo mode seeded, handoff PDF hero artefact ready, edge cases handled, app store-ready build.
 
 **Duration estimate:** 2–3 hours  
 **Dependencies:** Phases 0–8 complete
 
 ### Sprint 9.1 — Demo seed and final polish
+
 **Cursor prompt:**
+
 ```
 We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, polish, and build.
 
@@ -656,12 +692,25 @@ We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, p
    - Verify handoff PDF disclaimer is on every page
    - Verify flutter analyze --no-pub reports zero errors
 
-5. Build release candidate:
-   - flutter build apk --release (Android)
+5. iOS 26 compatibility check:
+   - Confirm UIDesignRequiresCompatibility = YES is set in
+     ios/Runner/Info.plist
+   - Run the app on the physical iOS 26 device (not just simulator)
+   - Verify: navigation works, wellness slider renders correctly,
+     pet Rive animation plays, check-in flow completes end to end,
+     handoff PDF generates and share sheet opens
+   - Verify: no visual regressions from Liquid Glass system chrome
+     (the opt-out flag should prevent any system-imposed glass effects)
+   - If any stock Alert dialogs or action sheets look inconsistent with
+     the rest of the app's design, replace them with custom Flutter
+     equivalents (showDialog with a custom widget) rather than using
+     CupertinoAlertDialog
+
+6. Build release candidate:
    - flutter build ios --release (iOS) — or flutter build ipa if signing configured
    - Report build sizes. Target: < 150 MB total including model weights
 
-6. Run /audit command and report all PASS/WARN/FAIL.
+7. Run /audit command and report all PASS/WARN/FAIL.
 
 Final report: list every FR from the SRS and whether it is implemented, partial, or out of scope for this build.
 ```
@@ -670,38 +719,43 @@ Final report: list every FR from the SRS and whether it is implemented, partial,
 
 ## Checklist before hackathon demo
 
-- [ ] App launches cold in < 2 seconds
-- [ ] Mode 1 check-in completable in < 20 seconds (3 taps: slider → submit → done)
-- [ ] SLM inference completes in < 3 seconds on demo device
-- [ ] Handoff PDF generates in < 10 seconds for 30-day dataset
-- [ ] Widget shows on home screen with correct pet state and streak
-- [ ] Notifications fire at scheduled time
-- [ ] No `flutter analyze` errors
-- [ ] All tests pass
-- [ ] /audit command returns 0 FAIL
-- [ ] Demo device has no notification banners from other apps, full battery
-- [ ] Seed data loaded and handoff PDF pre-generated for pitch
+- App launches cold in < 2 seconds
+- Mode 1 check-in completable in < 20 seconds (3 taps: slider → submit → done)
+- SLM inference completes in < 3 seconds on demo device
+- Handoff PDF generates in < 10 seconds for 30-day dataset
+- Widget shows on home screen with correct pet state and streak
+- Notifications fire at scheduled time
+- No `flutter analyze` errors
+- All tests pass
+- /audit command returns 0 FAIL
+- Demo device has no notification banners from other apps, full battery
+- Seed data loaded and handoff PDF pre-generated for pitch
 
 ---
 
 ## Post-hackathon: Android parity
+
 These sprints are explicitly out of scope for the hackathon build.
 Run them after the iOS version is stable and submitted.
 
 ### Sprint A.1 — Android Glance widget
+
 Implement native/android/widget/ using Kotlin + Glance.
 Reference: .cursor/skills/native-widgets/SKILL.md (Android section).
 
 ### Sprint A.2 — Health Connect integration
+
 The health package already supports Health Connect.
 Add Health Connect permissions to AndroidManifest.xml.
 Test on Android 14+ emulator.
 
 ### Sprint A.3 — Android notification channels
+
 flutter_local_notifications requires explicit channel setup on Android.
 Add notification channel creation in main.dart for Android.
 
 ### Sprint A.4 — Android E2E testing
+
 Run integration_test suite on Android emulator.
 Test model download over cellular warning on Android.
 Verify widget updates on Android 14+.

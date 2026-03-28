@@ -6,7 +6,9 @@
 ---
 
 ## Platform
-iOS 16+ primary. Android is post-hackathon.
+iOS 16+ minimum deployment target. Production test device: iPhone
+running iOS 26.2.1. Flutter supports iOS 26; Liquid Glass is not
+automatically adopted (see rule 00-project-context.mdc for handling).
 
 ## iOS setup prerequisites (one-time, before Sprint 0.1)
 ```bash
@@ -22,7 +24,7 @@ Without the Podfile, flutter_gemma will not link on iOS.
 - **Navigation**: go_router 14.x
 - **Database**: drift 2.x + sqlcipher_flutter_libs (AES-256)
 - **SLM inference**: flutter_gemma → MediaPipe (Gemma 3n E2B int4, on-device only)
-- **Animations**: rive 0.13.x (pet state machine) + confetti 0.7.x (milestones)
+- **Animations**: Flutter built-in AnimatedBuilder + Tween (pet rocking/bounce) + `confetti` 0.7.x (milestones)
 - **Health**: health 12.x (unified HealthKit + Health Connect)
 - **PDF**: pdf 3.x + printing 5.x (pure Dart, no native bridge)
 - **Notifications**: flutter_local_notifications 18.x
@@ -169,16 +171,17 @@ vitalpet/                                          # Flutter project root
 │           └── WellnessSparkline.kt               # Glance Row of colored Box composables (7 bars)
 │
 ├── assets/
-│   ├── animations/
-│   │   ├── cat.riv                                # Rive file: PetStateMachine, vitality/checkInComplete/isDead/timeOfDay inputs
-│   │   ├── dog.riv
-│   │   ├── rabbit.riv
-│   │   └── dragon.riv
-│   ├── widget_sprites/
-│   │   ├── cat_1.png … cat_5.png                 # static PNGs for widget (Rive not usable in widgets)
+│   ├── images/pets/
+│   │   ├── cat_1.png                              # thriving state
+│   │   ├── cat_2.png                              # happy state
+│   │   ├── cat_3.png                              # neutral state
+│   │   ├── cat_4.png                              # unwell state
+│   │   ├── cat_5.png                              # critical state
 │   │   ├── dog_1.png … dog_5.png
 │   │   ├── rabbit_1.png … rabbit_5.png
 │   │   └── dragon_1.png … dragon_5.png
+│   │   # Naming: <species>_<stateIndex>.png where stateIndex 1=thriving … 5=critical
+│   │   # These same files are used in BOTH the main app and the WidgetKit extension
 │   ├── models/                                    # .gitignored — Gemma 3n E2B downloaded at first launch
 │   │   └── .gitkeep
 │   ├── fonts/                                     # app typeface

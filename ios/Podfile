@@ -1,0 +1,7 @@
+platform :ios, '26.2.1'
+
+target 'Runner' do
+  use_frameworks!
+  pod 'MediaPipeTasksGenAI', '~> 0.10.24'
+  pod 'MediaPipeTasksGenAIC', '~> 0.10.24'
+end

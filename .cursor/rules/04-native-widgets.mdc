@@ -83,6 +83,18 @@ struct VitalPetProvider: TimelineProvider {
 ### Security: never include PHI in widget payload
 The widget extension has read access to the App Group. Never write check-in answers, wellness scores (only sparkline averages), or symptom names to the App Group.
 
+## Pet images in widgets
+Widgets use the same static PNG files as the main app:
+  assets/images/pets/<species>_<stateIndex>.png
+  (1=thriving, 2=happy, 3=neutral, 4=unwell, 5=critical)
+
+Copy these into the widget extension's asset catalog in Xcode:
+  In the Xcode project, add assets/images/pets/ as a folder reference
+  inside the VitalPetWidget target's asset catalog.
+  The WidgetDataProvider reads petState (1–5) and species from shared
+  UserDefaults; the SwiftUI view constructs the image name:
+    Image("\(species)_\(stateIndex)")
+
 ## Android Glance (Kotlin)
 
 > ⚠️ OUT OF SCOPE for iOS-first MVP. Implement in post-hackathon Sprint A.1.

@@ -15,7 +15,8 @@ VitalPet is a **Flutter** mobile app (iOS 16+ / Android 10+) that turns daily sy
 - **Navigation**: go_router 14.x
 - **Local DB**: drift 2.x (type-safe SQLite ORM) + `sqlcipher_flutter_libs` (AES-256 encryption)
 - **SLM inference**: `flutter_gemma` → MediaPipe LLM Inference API on-device (Gemma 3n E2B int4)
-- **Animations**: `rive` 0.13.x (pet states, state machine) + `confetti` 0.7.x (milestones)
+- **Animations**: Flutter built-in AnimatedBuilder + Tween (pet rocking/bounce effect,
+  PNG swap per vitality state) + `confetti` 0.7.x (milestone streaks). No Rive dependency.
 - **Health integration**: `health` 12.x (unified HealthKit + Health Connect adapter)
 - **PDF generation**: `pdf` 3.x + `printing` 5.x (pure Dart, zero native bridge required)
 - **Notifications**: `flutter_local_notifications` 18.x
@@ -125,6 +126,27 @@ do them before running any flutter command.
    connectivity using the `connectivity_plus` package. If on cellular, show a
    prompt: "The AI model (~1.5 GB) requires a Wi-Fi connection to download."
    Add connectivity_plus: ^6.0.0 to pubspec.yaml.
+
+6. iOS 26 / Liquid Glass handling:
+   The production device runs iOS 26.2.1. Flutter supports iOS 26 and
+   the app will run correctly. However, Flutter does not automatically
+   adopt Apple's Liquid Glass design (the Flutter team has confirmed this
+   is not yet implemented in Cupertino widgets).
+
+   Action required: add the following key to ios/Runner/Info.plist to
+   opt out of system-level Liquid Glass on any stock UIKit chrome:
+     <key>UIDesignRequiresCompatibility</key>
+     <true/>
+
+   This is a temporary measure acceptable for the hackathon. It will
+   need to be removed when the Flutter team ships Liquid Glass support
+   (expected post-Xcode 27, roughly September 2026).
+
+   VitalPet's UI is almost entirely custom (Rive pet, wellness slider,
+   cards) and does not rely on stock Cupertino navigation bars or tab
+   bars, so Liquid Glass non-support has minimal visual impact.
+   Do NOT attempt to implement Liquid Glass via platform views or
+   BackdropFilter hacks — the effort is not justified for the hackathon.
 
 ## Code style (Dart)
 - Use `final` for all local variables where possible

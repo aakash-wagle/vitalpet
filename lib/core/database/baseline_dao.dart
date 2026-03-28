@@ -3,31 +3,44 @@ import 'package:vitalpet/core/database/app_database.dart';
 
 part 'baseline_dao.g.dart';
 
-@DriftAccessor()
+@DriftAccessor(tables: [BaselineStats, SlmContextCache])
 class BaselineDao extends DatabaseAccessor<AppDatabase>
     with _$BaselineDaoMixin {
   BaselineDao(super.db);
 
-  Future<void> upsertBaseline(String domain, double value) async {
-    // TODO: implement
+  /// Insert or replace a baseline stats row for [companion.metric].
+  Future<void> upsertBaseline(BaselineStatsCompanion companion) async {
+    await into(baselineStats).insertOnConflictUpdate(companion);
   }
 
-  Future<double?> getBaseline(String domain) async {
-    // TODO: implement
-    return null;
+  /// Retrieve the baseline stats for a single [metric], or null if absent.
+  Future<BaselineStat?> getBaseline(String metric) {
+    return (select(baselineStats)
+          ..where((tbl) => tbl.metric.equals(metric)))
+        .getSingleOrNull();
   }
 
-  Future<Map<String, double>> getAllBaselines() async {
-    // TODO: implement
-    return {};
+  /// Retrieve all baseline stats rows as a map keyed by metric name.
+  Future<Map<String, BaselineStat>> getAllBaselines() async {
+    final rows = await select(baselineStats).get();
+    return {for (final row in rows) row.metric: row};
   }
 
-  Future<void> upsertContextCache(String key, String value) async {
-    // TODO: implement
+  /// Insert or replace the SLM context snapshot for a given [date].
+  Future<void> upsertContextCache(String date, String snapshot) async {
+    await into(slmContextCache).insertOnConflictUpdate(
+      SlmContextCacheCompanion.insert(
+        date: date,
+        contextSnapshot: snapshot,
+      ),
+    );
   }
 
-  Future<String?> getContextCache(String key) async {
-    // TODO: implement
-    return null;
+  /// Retrieve the SLM context snapshot for [date], or null if not cached.
+  Future<String?> getContextCache(String date) async {
+    final row = await (select(slmContextCache)
+          ..where((tbl) => tbl.date.equals(date)))
+        .getSingleOrNull();
+    return row?.contextSnapshot;
   }
 }

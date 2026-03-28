@@ -43,40 +43,29 @@ int calculateVitality({
 
 `PetStateMapper.mapVitalityToState(int vitality) → PetStateEnum` handles the mapping.
 
-## Rive state machine integration
+## Pet renderer (PNG + Flutter animation)
 ```dart
-// lib/features/pet/presentation/widgets/pet_renderer.dart
-// .riv file: assets/animations/<species>.riv
-// State machine: "PetStateMachine"
-// Inputs exposed by the Rive animator:
-//   Number: "vitality"         (0.0–100.0)
-//   Boolean: "checkInComplete" (triggers happy reaction animation)
-//   Boolean: "isDead"          (triggers death fade-out)
-//   Number: "timeOfDay"        (0=morning, 1=day, 2=evening, 3=night)
+// Asset path convention: assets/images/pets/<species>_<stateIndex>.png
+// stateIndex derived from: PetStateMapper.mapVitalityToState(vitality)
+// 1=thriving(80–100), 2=happy(60–79), 3=neutral(40–59),
+// 4=unwell(20–39), 5=critical(1–19)
 
-RiveAnimation.asset(
-  'assets/animations/${pet.species}.riv',
-  stateMachines: const ['PetStateMachine'],
-  onInit: _onRiveInit,
-  // Animations respects MediaQuery.of(context).disableAnimations:
-  // If true, call controller.isActive = false and show static image
-)
+// Continuous rocking: AnimationController repeating reverse,
+//   Tween<double>(begin: -0.04, end: 0.04), Transform.rotate
+// Disabled when MediaQuery.of(context).disableAnimations is true
 
-void _onRiveInit(Artboard artboard) {
-  final ctrl = StateMachineController.fromArtboard(artboard, 'PetStateMachine')!;
-  artboard.addController(ctrl);
-  _vitalityInput = ctrl.findInput<double>('vitality')!;
-  _completeInput = ctrl.findInput<bool>('checkInComplete')!;
-}
+// Happy bounce on check-in complete: separate short-lived controller,
+//   Tween<double>(begin: 1.0, end: 1.25), ScaleTransition, 300ms
 
-// Drive from Riverpod listener:
-ref.listen(petVitalityProvider, (_, v) => _vitalityInput.value = v.toDouble());
+// State change (vitality crosses a threshold): swap PNG asset path,
+//   wrap in AnimatedSwitcher(duration: 500ms) for smooth cross-fade
 ```
 
 ## Pet death
 ```dart
 // When calculateVitality() returns 0:
-// 1. Trigger death animation (isDead input = true on Rive)
+// 1. Stop rocking controller, show greyscale version of pet PNG
+//    Use ColorFiltered(colorFilter: ColorFilter.matrix(greyscaleMatrix), child: Image.asset(...))
 // 2. Show DeathScreen (greyscale fade, name in past tense, lifespan in days)
 // 3. Write archive record:
 await petArchiveDao.insertArchive(PetArchiveCompanion.insert(
@@ -146,12 +135,13 @@ if (newVitality < 20) {
 
 ## Time-of-day animation
 ```dart
-// Sets Rive "timeOfDay" input based on device local hour:
+// Time of day affects background gradient / ambient color of home screen
+// The pet PNG itself does not change — only the surrounding environment
+// Use a ColorTween on a background gradient driven by the same timeOfDayIndex()
 int timeOfDayIndex(int hour) => switch (hour) {
   >= 6 && < 11 => 0,   // morning
   >= 11 && < 18 => 1,  // day
   >= 18 && < 22 => 2,  // evening
   _ => 3,              // night
 };
-// Called in PetRenderer.initState() and at midnight
 ```

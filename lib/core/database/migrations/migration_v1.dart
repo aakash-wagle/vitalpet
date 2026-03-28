@@ -1,6 +1,19 @@
 import 'package:drift/drift.dart';
+import 'package:vitalpet/core/database/app_database.dart';
 
-/// Schema v1 onCreate — creates all tables from scratch.
-Future<void> migrateV1(Migrator m) async {
+/// Schema version 1 — initial database creation.
+///
+/// Creates all six tables defined in [AppDatabase]:
+/// - check_ins
+/// - pet_state_table
+/// - baseline_stats
+/// - audit_log
+/// - slm_context_cache
+/// - pet_archive
+///
+/// This migration is invoked by [AppDatabase.migration] → onCreate.
+/// Future schema changes should be added as migration_v2.dart, etc.
+/// Never drop or rename columns — always add new ones with defaults.
+Future<void> migrateV1onCreate(Migrator m, AppDatabase db) async {
   await m.createAll();
 }

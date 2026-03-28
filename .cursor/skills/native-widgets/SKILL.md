@@ -140,9 +140,9 @@ class WidgetDataProvider(private val context: Context) {
 ```
 
 ## Pet images in widgets
-Widgets cannot use Rive. Use static PNG sprites exported from Rive for each state × species:
+Widgets cannot use Rive. Use static PNG sprites for each state × species:
 ```
-assets/widget_sprites/
+assets/images/pets/
 ├── cat_1.png   # thriving
 ├── cat_2.png   # happy
 ├── cat_3.png   # neutral

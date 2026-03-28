@@ -69,34 +69,70 @@ class _CheckInBody extends StatelessWidget {
 - Set `Semantics(slider: true, value: '$score', min: '1', max: '10')` for accessibility
 - This is always the first interaction in a check-in — the score must be captured before any SLM call
 
-## PetRenderer widget (Rive)
+## PetRenderer widget (PNG + Flutter animation)
 ```dart
-// PetRenderer drives a Rive state machine via typed inputs
-// The .riv file (e.g. assets/animations/cat.riv) contains:
-//   - StateMachine: "PetStateMachine"
-//   - Number input: "vitality" (0–100) — state machine handles all transitions
-//   - Boolean inputs: "checkInComplete", "isDead", "isCritical"
-//   - Number input: "timeOfDay" (0–3: 0=morning, 1=day, 2=evening, 3=night)
+// Pet images live at: assets/images/pets/<species>_<stateIndex>.png
+// stateIndex: 1=thriving, 2=happy, 3=neutral, 4=unwell, 5=critical
+// PetStateMapper.mapVitalityToState(vitality) → stateIndex
 
-RiveAnimation.asset(
-  'assets/animations/${petState.species}.riv',
-  stateMachines: const ['PetStateMachine'],
-  onInit: (artboard) {
-    final controller = StateMachineController.fromArtboard(
-      artboard, 'PetStateMachine',
+class PetRenderer extends ConsumerStatefulWidget {
+  // Drives two things from Riverpod:
+  // 1. Which PNG to show (species + stateIndex from petStateProvider)
+  // 2. Whether to animate (MediaQuery.of(context).disableAnimations)
+}
+
+class _PetRendererState extends State<PetRenderer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _rockAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _rockAnimation = Tween<double>(begin: -0.04, end: 0.04)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pet = ref.watch(petStateProvider).value;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final assetPath = 'assets/images/pets/'
+        '${pet?.species ?? 'cat'}_${pet?.stateIndex ?? 1}.png';
+
+    final image = Image.asset(assetPath, width: 200, height: 200);
+
+    return Semantics(
+      label: '${pet?.name} the ${pet?.species}, ${pet?.stateName}',
+      child: disableAnimations
+          ? image
+          : AnimatedBuilder(
+              animation: _rockAnimation,
+              builder: (_, child) => Transform.rotate(
+                angle: _rockAnimation.value,
+                child: child,
+              ),
+              child: image,
+            ),
     );
-    artboard.addController(controller!);
-    _vitalityInput = controller.findInput<double>('vitality');
-    _checkInCompleteInput = controller.findInput<bool>('checkInComplete');
-  },
-)
-// Drive from Riverpod:
-ref.listen(petVitalityProvider, (_, vitality) {
-  _vitalityInput?.value = vitality.toDouble();
-});
+  }
+}
 ```
-- Always pass `accessibilityLabel: '${petState.name} the ${petState.species}, ${petState.stateName}'`
-- Respect `MediaQuery.of(context).disableAnimations` — if true, show a static image fallback
+
+For the happy bounce on check-in completion:
+```dart
+// Trigger a single bounce (scale up then back) when checkInComplete fires
+// Use a separate short-lived AnimationController, not the continuous rock controller
+void triggerHappyBounce() {
+  _bounceController.forward().then((_) => _bounceController.reverse());
+}
+// _bounceController: duration 300ms, Tween<double>(begin: 1.0, end: 1.25)
+// Wrap image in ScaleTransition(scale: _bounceAnimation, child: image)
+```
 
 ## CompanionBubble widget (Mode 3)
 - Renders SLM-generated text as speech bubbles attributed to the pet
