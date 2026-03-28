@@ -435,100 +435,16 @@ Test manually that full onboarding flow runs and pet appears on home screen afte
 
 ---
 
-## Phase 6 — Notifications & Widgets
-**Goal:** Push notifications scheduled, home screen widgets showing pet + streak + sparkline.
-
-**Duration estimate:** 3–4 hours  
-**Dependencies:** Phase 5 complete
-
-### Sprint 6.1 — Notifications
-**Cursor prompt:**
-```
-We are building VitalPet. Phases 0–5 complete. Now implement notifications.
-
-Read before writing any code:
-- .cursor/rules/00-project-context.mdc (notification payload rules — no PHI)
-
-Implement lib/features/notifications/notification_scheduler.dart:
-
-1. schedulePrimary(String petName, int petStateIndex, TimeOfDay reminderTime):
-   - Daily at reminderTime
-   - Title: "[petName] misses you."
-   - Body: "How are you feeling today?"
-   - Payload: JSON {petState: petStateIndex} — no wellness scores, no symptoms
-
-2. scheduleSecondary(String petName):
-   - Daily at 21:00 local time
-   - Only if primary was not acted on (check using flutter_local_notifications pending list)
-   - Body: "Last chance — [petName] is waiting for you tonight."
-
-3. scheduleCritical(String petName, int daysMissed):
-   - Fires immediately, overrides quiet hours (importance: Importance.max, priority: Priority.max)
-   - Body: "[petName] is very unwell. They haven't heard from you in [N] days."
-   - Called when vitality < 20
-
-4. scheduleMilestone(String petName, int streakDays):
-   - Fires once at current time
-   - Body: "You and [petName] have been together for [N] days! They're glowing."
-
-5. cancelAll(): cancels all scheduled notifications (called on pet death)
-
-Then implement lib/features/notifications/pattern_adapter.dart:
-   - After 7 days of usage, compares user's actual open times to their reminder setting
-   - If user consistently opens 2+ hours before/after reminder → surfaces a suggestion card on home screen
-   - Does NOT auto-change the reminder time
-
-Run: flutter analyze --no-pub
-Test on device that primary notification fires at set time and critical fires immediately when triggered.
-```
-
----
-
-### Sprint 6.2 — Home screen widgets (native)
-**Cursor prompt:**
-```
-We are building VitalPet. Sprint 6.1 (notifications) complete. Now build the home screen widgets.
-
-Read before writing any code:
-- .cursor/rules/04-native-widgets.mdc
-- .cursor/skills/native-widgets/SKILL.md
-
-IMPORTANT: This sprint involves native Swift and Kotlin code. The Flutter side is already done via home_widget package. This sprint is ONLY the native widget targets.
-
-For iOS (native/ios/VitalPetWidget/):
-1. VitalPetWidget.swift — WidgetBundle + Widget configuration, supports .systemSmall and .systemMedium
-2. WidgetDataProvider.swift — TimelineProvider reading from UserDefaults(suiteName: "group.com.vitalpet.shared")
-3. VitalPetEntryView.swift — SwiftUI views:
-   - Small (2×2): pet sprite image (from widget_sprites/) + streak count + "Check in" widgetURL link
-   - Medium (4×2): same + WellnessSparkline
-4. WellnessSparkline.swift — SwiftUI Path: 7 bars, height proportional to score (1–10), grey for nil/missed
-5. VitalPetWidget.entitlements — App Group: group.com.vitalpet.shared
-
-Android Glance widget is OUT OF SCOPE for this iOS-first MVP.
-Do not implement native/android/widget/.
-Implement ONLY the iOS WidgetKit widget as specified above.
-Document the Android Glance sprint as post-hackathon work.
-
-After implementing native code:
-- On iOS: open the Xcode project, add the widget extension target, set the App Group entitlement on BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
-
-Note: The pet images used in widgets mirror the identical static PNGs used in the main app from assets/images/pets/.
-
-Document any manual Xcode steps required (entitlements, target membership, etc.).
-```
-
----
-
-## Phase 7 — Doctor Handoff
+## Phase 6 — Doctor Handoff
 **Goal:** Complete PDF handoff: narrative, trend chart, heatmap, health correlation, share sheet.
 
 **Duration estimate:** 3–4 hours  
-**Dependencies:** Phases 1–4 complete (domain logic, check-in data exists in DB)
+**Dependencies:** Phases 1–5 complete (domain logic, check-in data exists in DB)
 
-### Sprint 7.1 — Handoff PDF generation
+### Sprint 6.1 — Handoff PDF generation
 **Cursor prompt:**
 ```
-We are building VitalPet. Phases 0–4 complete (we are doing Phase 7 in parallel with Phase 6).
+We are building VitalPet. Phases 0–5 complete.
 
 Read before writing any code:
 - .cursor/skills/handoff/SKILL.md
@@ -568,6 +484,90 @@ Implement the doctor handoff using the pdf 3.x + printing 5.x packages (pure Dar
 
 Run: flutter analyze --no-pub
 Test manually: generate a handoff from the demo seed data. Verify PDF opens, shows all pages, disclaimer is present, share sheet appears.
+```
+
+---
+
+## Phase 7 — Notifications & Widgets
+**Goal:** Push notifications scheduled, home screen widgets showing pet + streak + sparkline.
+
+**Duration estimate:** 3–4 hours  
+**Dependencies:** Phase 6 complete
+
+### Sprint 7.1 — Notifications
+**Cursor prompt:**
+```
+We are building VitalPet. Phases 0–6 complete. Now implement notifications.
+
+Read before writing any code:
+- .cursor/rules/00-project-context.mdc (notification payload rules — no PHI)
+
+Implement lib/features/notifications/notification_scheduler.dart:
+
+1. schedulePrimary(String petName, int petStateIndex, TimeOfDay reminderTime):
+   - Daily at reminderTime
+   - Title: "[petName] misses you."
+   - Body: "How are you feeling today?"
+   - Payload: JSON {petState: petStateIndex} — no wellness scores, no symptoms
+
+2. scheduleSecondary(String petName):
+   - Daily at 21:00 local time
+   - Only if primary was not acted on (check using flutter_local_notifications pending list)
+   - Body: "Last chance — [petName] is waiting for you tonight."
+
+3. scheduleCritical(String petName, int daysMissed):
+   - Fires immediately, overrides quiet hours (importance: Importance.max, priority: Priority.max)
+   - Body: "[petName] is very unwell. They haven't heard from you in [N] days."
+   - Called when vitality < 20
+
+4. scheduleMilestone(String petName, int streakDays):
+   - Fires once at current time
+   - Body: "You and [petName] have been together for [N] days! They're glowing."
+
+5. cancelAll(): cancels all scheduled notifications (called on pet death)
+
+Then implement lib/features/notifications/pattern_adapter.dart:
+   - After 7 days of usage, compares user's actual open times to their reminder setting
+   - If user consistently opens 2+ hours before/after reminder → surfaces a suggestion card on home screen
+   - Does NOT auto-change the reminder time
+
+Run: flutter analyze --no-pub
+Test on device that primary notification fires at set time and critical fires immediately when triggered.
+```
+
+---
+
+### Sprint 7.2 — Home screen widgets (native)
+**Cursor prompt:**
+```
+We are building VitalPet. Sprint 7.1 (notifications) complete. Now build the home screen widgets.
+
+Read before writing any code:
+- .cursor/rules/04-native-widgets.mdc
+- .cursor/skills/native-widgets/SKILL.md
+
+IMPORTANT: This sprint involves native Swift and Kotlin code. The Flutter side is already done via home_widget package. This sprint is ONLY the native widget targets.
+
+For iOS (native/ios/VitalPetWidget/):
+1. VitalPetWidget.swift — WidgetBundle + Widget configuration, supports .systemSmall and .systemMedium
+2. WidgetDataProvider.swift — TimelineProvider reading from UserDefaults(suiteName: "group.com.vitalpet.shared")
+3. VitalPetEntryView.swift — SwiftUI views:
+   - Small (2×2): pet sprite image (from widget_sprites/) + streak count + "Check in" widgetURL link
+   - Medium (4×2): same + WellnessSparkline
+4. WellnessSparkline.swift — SwiftUI Path: 7 bars, height proportional to score (1–10), grey for nil/missed
+5. VitalPetWidget.entitlements — App Group: group.com.vitalpet.shared
+
+Android Glance widget is OUT OF SCOPE for this iOS-first MVP.
+Do not implement native/android/widget/.
+Implement ONLY the iOS WidgetKit widget as specified above.
+Document the Android Glance sprint as post-hackathon work.
+
+After implementing native code:
+- On iOS: open the Xcode project, add the widget extension target, set the App Group entitlement on BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
+
+Note: The pet images used in widgets mirror the identical static PNGs used in the main app from assets/images/pets/.
+
+Document any manual Xcode steps required (entitlements, target membership, etc.).
 ```
 
 ---
