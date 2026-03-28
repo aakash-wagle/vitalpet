@@ -1,25 +1,22 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  strong-mode:
-    implicit-casts: false
-    implicit-dynamic: false
   errors:
-    missing_return: error
-    dead_code: warning
-    unused_import: error
-    unused_local_variable: warning
+    invalid_annotation_target: ignore   # suppresses freezed warnings
   exclude:
-    - "**/*.g.dart"
-    - "**/*.freezed.dart"
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
 
 linter:
   rules:
     prefer_final_locals: true
+    avoid_print: true
     prefer_const_constructors: true
     prefer_const_declarations: true
-    avoid_print: true
-    prefer_single_quotes: true
-    require_trailing_commas: true
-    sort_constructors_first: true
     always_use_package_imports: true
+    avoid_dynamic_calls: true
+    avoid_unused_constructor_parameters: true
+    cancel_subscriptions: true
+    close_sinks: true
+    prefer_relative_imports: false
+    unawaited_futures: true

@@ -1,22 +1,3 @@
 {
-  "domains": [
-    "pain",
-    "fatigue",
-    "sleep",
-    "appetite",
-    "nausea",
-    "mood",
-    "cognitive",
-    "medication"
-  ],
-  "domain_labels": {
-    "pain": "Pain",
-    "fatigue": "Fatigue",
-    "sleep": "Sleep",
-    "appetite": "Appetite",
-    "nausea": "Nausea",
-    "mood": "Mood",
-    "cognitive": "Brain fog",
-    "medication": "Medication side effects"
-  }
+  "domains": ["pain", "fatigue", "sleep", "appetite", "nausea", "mood", "cognitive", "medication"]
 }
