@@ -1,0 +1,20 @@
+{
+  "patterns": [
+    "you have",
+    "you are diagnosed",
+    "diagnosis is",
+    "you should take",
+    "take this medication",
+    "prescription",
+    "i recommend",
+    "i suggest you take",
+    "consult a doctor",
+    "see a doctor",
+    "medical advice",
+    "treatment plan",
+    "this is caused by",
+    "your condition is",
+    "symptoms indicate",
+    "this means you"
+  ]
+}

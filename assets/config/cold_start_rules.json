@@ -1,0 +1,7 @@
+{
+  "default": ["pain", "fatigue", "sleep", "appetite", "mood"],
+  "chronic_pain": ["pain", "fatigue", "sleep", "mood", "cognitive"],
+  "post_surgery": ["pain", "appetite", "sleep", "fatigue", "mood"],
+  "mental_health": ["mood", "sleep", "fatigue", "appetite", "cognitive"],
+  "general_wellness": ["pain", "fatigue", "sleep", "appetite", "mood"]
+}

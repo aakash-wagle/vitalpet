@@ -1,0 +1,10 @@
+---
+description: Design system and accessibility standards for the Presentation Layer.
+globs: "lib/presentation/**/*.dart"
+---
+
+# UI Guidelines
+1. Touch Targets: All interactive elements must meet WCAG 2.1 AA minimum touch target size of 44x44pt.
+2. Accessibility: Ensure support for VoiceOver on iOS and TalkBack on Android, and provide descriptive alt text for all pet animations.
+3. Color Usage: Color is never the sole indicator of meaning. Pet state labels must appear as text beneath the sprite.
+4. State Transitions: Transitions between pet visual states must use smooth 500ms cross-fade animations.

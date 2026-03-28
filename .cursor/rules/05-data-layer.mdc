@@ -1,0 +1,180 @@
+---
+description: Drift database, schema, migrations, encryption, and DAO conventions for VitalPet
+globs: ["lib/core/database/**/*.dart", "lib/features/**/data/**/*.dart", "lib/core/encryption/**/*.dart", "lib/core/audit/**/*.dart"]
+alwaysApply: false
+---
+
+# VitalPet — Data Layer Conventions (drift + SQLCipher)
+
+## Drift table definitions (source of truth)
+```dart
+// lib/core/database/app_database.dart
+import 'package:drift/drift.dart';
+import 'package:drift_flutter/drift_flutter.dart';
+
+// check_ins — one row per check-in session
+class CheckIns extends Table {
+  TextColumn get id => text()();                          // UUID PK
+  TextColumn get utcDate => text()();                     // "2025-06-15" — UTC date string
+  TextColumn get localDate => text()();                   // "2025-06-15" — device local date
+  IntColumn get wellnessScore => integer()();             // 1–10
+  IntColumn get mode => integer()();                      // 1, 2, or 3
+  TextColumn get answersJson => text()();                 // JSON array of answered questions
+  RealColumn get depthScore => real().withDefault(const Constant(0.0))(); // 0.0–1.0
+  BoolColumn get isPartial => boolean().withDefault(const Constant(false))();
+  TextColumn get amendedAt => text().nullable()();        // ISO 8601 UTC if amended
+  TextColumn get createdAt => text()();                   // ISO 8601 UTC
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// pet_state — single-row table (current active pet)
+class PetStateTable extends Table {
+  TextColumn get petId => text()();
+  TextColumn get name => text()();
+  TextColumn get species => text()();                     // 'cat'|'dog'|'rabbit'|'dragon'
+  IntColumn get vitality => integer().withDefault(const Constant(60))();
+  IntColumn get streak => integer().withDefault(const Constant(0))();
+  TextColumn get lastCheckinUtc => text().nullable()();
+  BoolColumn get calmMode => boolean().withDefault(const Constant(false))();
+  IntColumn get consecutiveBadDays => integer().withDefault(const Constant(0))();
+  BoolColumn get freezeAvailable => boolean().withDefault(const Constant(true))();
+  TextColumn get freezeLastUsedDate => text().nullable()();
+  TextColumn get deletionScheduledAt => text().nullable()();
+  BoolColumn get vulnerabilityCardShown => boolean().withDefault(const Constant(false))();
+  BoolColumn get vulnerabilityFrozen => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {petId};
+}
+
+// baseline_stats — rolling 14-day stats per metric
+class BaselineStats extends Table {
+  TextColumn get metric => text()();
+  RealColumn get mean14d => real()();
+  RealColumn get stddev14d => real()();
+  IntColumn get sampleCount => integer()();
+  TextColumn get lastComputedUtc => text()();
+
+  @override
+  Set<Column> get primaryKey => {metric};
+}
+
+// audit_log — append-only
+class AuditLog extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get eventType => text()();
+  TextColumn get utcTimestamp => text()();
+  TextColumn get sessionId => text().nullable()();
+  TextColumn get payloadHash => text().nullable()();      // SHA-256 of content, never raw content
+}
+
+// slm_context_cache
+class SlmContextCache extends Table {
+  TextColumn get date => text()();                        // "2025-06-15"
+  TextColumn get contextSnapshot => text()();             // pre-serialised JSON context
+
+  @override
+  Set<Column> get primaryKey => {date};
+}
+
+// pet_archive — deceased pets
+class PetArchive extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get species => text()();
+  IntColumn get lifespanDays => integer()();
+  IntColumn get totalCheckins => integer()();
+  TextColumn get topSymptom => text().nullable()();
+  TextColumn get diedAtUtc => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+```
+
+## Opening the encrypted database
+```dart
+// lib/core/encryption/encryption_service.dart
+// Key is stored in flutter_secure_storage (backed by iOS Keychain / Android Keystore)
+// and passed to drift's DriftNativeOptions.
+
+Future<AppDatabase> openEncryptedDatabase() async {
+  final key = await EncryptionService.getOrCreateKey();
+  return AppDatabase(
+    DriftNativeDatabase.fromKey(key), // sqlcipher_flutter_libs provides this
+  );
+}
+// Never open a plain DriftNativeDatabase() without a key.
+```
+
+## Migration pattern
+```dart
+// lib/core/database/migrations/migration_v2.dart
+// Add a column — always with a default value for existing rows
+MigrationStrategy get migration => MigrationStrategy(
+  onCreate: (m) => m.createAll(),
+  onUpgrade: (m, from, to) async {
+    if (from < 2) {
+      await m.addColumn(petStateTable, petStateTable.vulnerabilityCardShown);
+      await m.addColumn(petStateTable, petStateTable.vulnerabilityFrozen);
+    }
+  },
+);
+// Never drop or rename columns — add new ones with defaults.
+```
+
+## Atomic writes — always use transactions
+```dart
+// CORRECT — all check-in writes in one transaction
+await db.transaction(() async {
+  await checkInDao.insertCheckIn(sessionCompanion);
+  await petDao.updateVitality(newVitality, newStreak);
+  await auditLogDao.append(AuditEvent.checkinWrite(
+    sessionId: sessionCompanion.id.value,
+    payloadHash: _sha256(sessionCompanion.answersJson.value),
+  ));
+  // Post-commit: baseline tracker runs as a follow-up after transaction closes
+});
+```
+
+## Timestamp discipline
+- All stored timestamps: ISO 8601 UTC strings `"2025-06-15T14:30:00.000Z"` — use `DateTime.now().toUtc().toIso8601String()`
+- `utcDate`: `"2025-06-15"` — used for streak calculation (prevents timezone-shift breaks)
+- `localDate`: device local date — used for display calendar
+- Never store `millisecondsSinceEpoch` integers
+
+## AuditLogDao — append only
+```dart
+class AuditLogDao extends DatabaseAccessor<AppDatabase> {
+  // ONLY public methods:
+  Future<void> append(AuditEvent event) async { ... }
+  Future<void> appendInTransaction(AuditEvent event) async { ... } // call inside db.transaction()
+  // No update(), no delete(), no clear()
+}
+
+// Required audit event types (use AuditEvent.xxx() factories):
+// checkinWrite, amendment, filterTrigger, handoffExport, dataExport, deleteInitiated
+```
+
+## Deletion flow
+```dart
+// Step 1: schedule (7-day recovery window)
+await petDao.setDeletionScheduled(DateTime.now().toUtc().toIso8601String());
+await auditLogDao.append(AuditEvent.deleteInitiated());
+
+// Step 2: on next launch, check if 7 days have passed
+final scheduled = await petDao.getDeletionScheduledAt();
+if (scheduled != null && DateTime.now().difference(DateTime.parse(scheduled)).inDays >= 7) {
+  await EncryptionService.destroyKey(); // removes from flutter_secure_storage
+  // DB is now cryptographically inaccessible — app shows first-launch screen
+}
+```
+
+## JSON export
+`lib/core/database/export_service.dart` — exported JSON must:
+- Include all tables EXCEPT `audit_log` (internal) and `slm_context_cache` (reconstructable)
+- Be pretty-printed: `const JsonEncoder.withIndent('  ')`
+- Include `exportedAt: DateTime.now().toUtc().toIso8601String()` at root
+- Never include the encryption key or any cryptographic material

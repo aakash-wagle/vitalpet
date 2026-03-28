@@ -1,0 +1,144 @@
+---
+description: Flutter screen, widget, and Rive animation conventions for VitalPet presentation layer
+globs: ["lib/features/**/presentation/**/*.dart", "lib/presentation/**/*.dart"]
+alwaysApply: false
+---
+
+# VitalPet — Flutter UI Conventions
+
+## Widget structure
+Every screen and reusable widget follows this layout:
+
+```dart
+// 1. Flutter imports
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // for HapticFeedback
+
+// 2. Riverpod
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// 3. Third-party (go_router, rive, etc.)
+import 'package:go_router/go_router.dart';
+
+// 4. Internal feature imports — domain, not presentation
+import 'package:vitalpet/features/check_in/domain/check_in_engine.dart';
+import 'package:vitalpet/features/pet/domain/pet_state_mapper.dart';
+
+// 5. Internal presentation imports
+import 'package:vitalpet/presentation/theme/app_colors.dart';
+import 'package:vitalpet/presentation/theme/app_text_styles.dart';
+
+// Screens are ConsumerWidget (reads Riverpod providers)
+class CheckInScreen extends ConsumerWidget {
+  const CheckInScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch providers first
+    final sessionState = ref.watch(checkInSessionProvider);
+    final petState = ref.watch(petStateProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: _CheckInBody(sessionState: sessionState),
+      ),
+    );
+  }
+}
+
+// Extract heavy subtrees into private widgets to minimise rebuilds
+class _CheckInBody extends StatelessWidget {
+  const _CheckInBody({required this.sessionState});
+  final CheckInSessionState sessionState;
+
+  @override
+  Widget build(BuildContext context) { ... }
+}
+```
+
+## Screen-level rules
+- Screens read Riverpod providers via `ref.watch` and dispatch actions via `ref.read(provider.notifier).method()`
+- **Zero business logic in screens.** All computation belongs in domain notifiers or pure domain functions
+- All navigation uses `context.go()`, `context.push()` from go_router — never `Navigator.push`
+- Every screen that loads data must handle `AsyncValue.loading`, `AsyncValue.error`, and `AsyncValue.data`
+
+## WellnessSlider widget
+- Full-screen slider, scale 1–10
+- Trigger `HapticFeedback.lightImpact()` on each integer step (iOS only — wrap in `if (Platform.isIOS)`)
+- Set `Semantics(slider: true, value: '$score', min: '1', max: '10')` for accessibility
+- This is always the first interaction in a check-in — the score must be captured before any SLM call
+
+## PetRenderer widget (Rive)
+```dart
+// PetRenderer drives a Rive state machine via typed inputs
+// The .riv file (e.g. assets/animations/cat.riv) contains:
+//   - StateMachine: "PetStateMachine"
+//   - Number input: "vitality" (0–100) — state machine handles all transitions
+//   - Boolean inputs: "checkInComplete", "isDead", "isCritical"
+//   - Number input: "timeOfDay" (0–3: 0=morning, 1=day, 2=evening, 3=night)
+
+RiveAnimation.asset(
+  'assets/animations/${petState.species}.riv',
+  stateMachines: const ['PetStateMachine'],
+  onInit: (artboard) {
+    final controller = StateMachineController.fromArtboard(
+      artboard, 'PetStateMachine',
+    );
+    artboard.addController(controller!);
+    _vitalityInput = controller.findInput<double>('vitality');
+    _checkInCompleteInput = controller.findInput<bool>('checkInComplete');
+  },
+)
+// Drive from Riverpod:
+ref.listen(petVitalityProvider, (_, vitality) {
+  _vitalityInput?.value = vitality.toDouble();
+});
+```
+- Always pass `accessibilityLabel: '${petState.name} the ${petState.species}, ${petState.stateName}'`
+- Respect `MediaQuery.of(context).disableAnimations` — if true, show a static image fallback
+
+## CompanionBubble widget (Mode 3)
+- Renders SLM-generated text as speech bubbles attributed to the pet
+- Text must always be the output of `MedicalContentFilter.filter()` — never raw SLM output
+- No time pressure UI elements in this widget — remove any countdown or urgency cues
+- "I'm done" button always visible, even mid-conversation
+
+## BodyMap widget
+- Renders an SVG-based silhouette using `flutter_svg`
+- Minimum tap target per region: 44×44 logical pixels (WCAG AA)
+- Maximum 3 regions selected simultaneously — selecting a 4th deselects the oldest
+- `Semantics(label: 'Body region: ${region.name}, ${selected ? 'selected' : 'not selected'}')` on each tap target
+
+## Theme system
+```dart
+// ALWAYS use theme tokens — never hardcode
+AppColors.background          // background surfaces
+AppColors.primary             // teal accent
+AppColors.danger              // red — critical state
+AppColors.textPrimary         // primary text
+AppTextStyles.bodyLarge       // 16sp body
+AppTextStyles.headlineMedium  // screen titles
+```
+- Dark mode is handled in `AppTheme.dark()` — test both modes
+- Never hardcode `Color(0xFF...)` values outside `app_colors.dart`
+- Never hardcode `TextStyle(fontSize: ...)` outside `app_text_styles.dart`
+
+## Accessibility non-negotiables
+- Minimum touch target: 44×44 logical pixels (`ConstrainedBox` or `SizedBox` wrapping `GestureDetector`)
+- `Semantics` wrapper on every custom interactive widget
+- All Rive animations must have a `Semantics(label: ...)` sibling for screen readers
+- Colour is never the sole meaning indicator — pair with text labels
+- `MediaQuery.of(context).disableAnimations` must be respected everywhere
+
+## Confetti (milestone streaks)
+```dart
+// Only for 7, 14, 30, 90-day milestones on check-in completion
+ConfettiWidget(
+  confettiController: _confettiController,
+  blastDirectionality: BlastDirectionality.explosive,
+  shouldLoop: false,
+  colors: const [AppColors.primary, AppColors.accent, AppColors.warning],
+)
+// Wrap in: if (!MediaQuery.of(context).disableAnimations)
+```

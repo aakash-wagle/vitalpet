@@ -1,0 +1,120 @@
+---
+description: Native widget conventions for iOS WidgetKit (Swift) and Android Glance (Kotlin) in VitalPet
+globs: ["native/ios/**/*.swift", "native/android/**/*.kt"]
+alwaysApply: false
+---
+
+# VitalPet — Native Widget Conventions
+
+## Why native code exists at all
+Flutter **cannot** build home screen widgets. iOS WidgetKit requires Swift/SwiftUI; Android Glance requires Kotlin/Compose. These are the only two areas of the project with mandatory native code. Everything else — SLM inference, PDF generation, health integration, database, notifications — is handled by Flutter packages in pure Dart.
+
+## Shared data contract
+The Flutter app writes widget data to a shared container after every check-in completion and at midnight UTC. The native widgets read from this container.
+
+### iOS — App Group UserDefaults
+```
+App Group ID: group.com.vitalpet.shared
+Keys written by Flutter (via shared_preferences App Group extension):
+  petVitality:      Int  (0–100)
+  currentStreak:    Int
+  petSpecies:       String  ("cat" | "dog" | "rabbit" | "dragon")
+  petState:         Int  (1=thriving, 2=happy, 3=neutral, 4=unwell, 5=critical)
+  petName:          String  (user-chosen name — not PHI for widget purposes)
+  wellnessSparkline: String  (JSON-encoded [Int] — last 7 daily scores)
+```
+
+Flutter writes using `shared_preferences` with the `groupId` option pointing to the App Group. After writing, call `WidgetCenter.shared.reloadAllTimelines()` via a method channel or the `home_widget` package.
+
+### Android — SharedPreferences
+```
+File name: "vitalpet_widget"  (MODE_PRIVATE)
+Keys: same names as iOS above
+```
+After writing, call `GlanceAppWidgetManager.getInstance(context).updateIf<VitalPetWidget> { true }`.
+
+## iOS WidgetKit (Swift/SwiftUI)
+
+### Reading shared data
+```swift
+// native/ios/VitalPetWidget/WidgetDataProvider.swift
+import WidgetKit
+import SwiftUI
+
+struct VitalPetEntry: TimelineEntry {
+    let date: Date
+    let petVitality: Int
+    let currentStreak: Int
+    let petState: Int
+    let petName: String
+    let wellnessSparkline: [Int]
+}
+
+struct VitalPetProvider: TimelineProvider {
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.vitalpet.shared")!
+
+    func getEntry() -> VitalPetEntry {
+        let sparklineJSON = sharedDefaults.string(forKey: "wellnessSparkline") ?? "[]"
+        let sparkline = (try? JSONDecoder().decode([Int].self,
+                         from: sparklineJSON.data(using: .utf8)!)) ?? []
+        return VitalPetEntry(
+            date: .now,
+            petVitality: sharedDefaults.integer(forKey: "petVitality"),
+            currentStreak: sharedDefaults.integer(forKey: "currentStreak"),
+            petState: sharedDefaults.integer(forKey: "petState"),
+            petName: sharedDefaults.string(forKey: "petName") ?? "your pet",
+            wellnessSparkline: sparkline
+        )
+    }
+}
+```
+
+### Widget views (2×2 and 4×2)
+- `PetWidgetView.swift` — SwiftUI view with `@Entry` for both sizes
+- 2×2: pet image (sprite PNG for current state) + streak count + "Check in" link
+- 4×2: adds `WellnessSparkline.swift` — a 7-bar mini chart rendered with SwiftUI `Path`
+- Deep-link URL: `vitalpet://checkin` — registered in `Info.plist` and handled in Flutter via go_router
+
+### Security: never include PHI in widget payload
+The widget extension has read access to the App Group. Never write check-in answers, wellness scores (only sparkline averages), or symptom names to the App Group.
+
+## Android Glance (Kotlin)
+
+### Reading shared data
+```kotlin
+// native/android/widget/WidgetDataProvider.kt
+class WidgetDataProvider(private val context: Context) {
+    private val prefs = context.getSharedPreferences("vitalpet_widget", Context.MODE_PRIVATE)
+
+    fun getEntry(): WidgetEntry = WidgetEntry(
+        petVitality = prefs.getInt("petVitality", 60),
+        currentStreak = prefs.getInt("currentStreak", 0),
+        petState = prefs.getInt("petState", 1),
+        petName = prefs.getString("petName", "your pet") ?: "your pet",
+        wellnessSparkline = try {
+            JSONArray(prefs.getString("wellnessSparkline", "[]") ?: "[]")
+                .let { arr -> (0 until arr.length()).map { arr.getInt(it) } }
+        } catch (_: Exception) { emptyList() }
+    )
+}
+```
+
+### Widget composables
+- `VitalPetWidget.kt` — `GlanceAppWidget` entry point, registers `VitalPetWidget::class`
+- `PetWidgetContent.kt` — `@Composable` for both size variants using `LocalSize.current`
+- `WellnessSparkline.kt` — 7-bar mini chart using Glance `Canvas` or `Box` layout
+- Deep-link action: `actionStartActivity<MainActivity>` with `Intent.ACTION_VIEW` URI `vitalpet://checkin`
+
+## Update triggers (both platforms)
+Call the update from Flutter after:
+1. Every check-in completion (in `CheckInEngine.completeSession()`)
+2. Midnight UTC timer (in `NotificationScheduler`)
+3. Pet death or new pet creation
+
+Use the `home_widget` Flutter package (`home_widget: ^0.5.x`) to write shared data and trigger updates from Dart — this avoids the need for a manual Method Channel.
+
+## Common mistakes to avoid
+- Do not put pet animation (Rive) in the widget — use static PNG sprites exported per state
+- Do not read from the drift database directly from the widget extension — only read from the shared container
+- Do not write PHI to the shared container — only pet display metadata (name, state, streak, sparkline)
+- Do not trigger widget updates more than once per check-in — avoid batching multiple `reloadAllTimelines()` calls

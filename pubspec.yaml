@@ -1,0 +1,70 @@
+name: vitalpet
+description: Adaptive Symptom Journal with Habit-Forming AI Companion
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State management
+  flutter_riverpod: ^3.0.0
+  riverpod_annotation: ^3.0.0
+  # Navigation
+  go_router: ^14.0.0
+  # Database
+  drift: ^2.22.0
+  sqlcipher_flutter_libs: ^0.8.0
+  drift_flutter: ^0.2.0
+  # Encryption
+  flutter_secure_storage: ^9.2.0
+  # SLM inference
+  flutter_gemma: ^2.0.0
+  # Animations
+  rive: ^0.13.0
+  confetti: ^0.7.0
+  # Health integration
+  health: ^12.0.0
+  # PDF
+  pdf: ^3.11.0
+  printing: ^5.13.0
+  # Notifications
+  flutter_local_notifications: ^18.0.0
+  # Widget data bridge
+  home_widget: ^0.5.0
+  # SVG (body map)
+  flutter_svg: ^2.0.0
+  # Data classes
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.9.0
+  # Utilities
+  crypto: ^3.0.0
+  intl: ^0.19.0
+  path_provider: ^2.1.0
+  uuid: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.0
+  riverpod_generator: ^3.0.0
+  freezed: ^2.5.0
+  drift_dev: ^2.22.0
+  json_serializable: ^6.8.0
+  mocktail: ^1.0.0
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/animations/
+    - assets/widget_sprites/
+    - assets/fonts/
+    - assets/config/slm_prompt.txt
+    - assets/config/symptom_taxonomy.json
+    - assets/config/cold_start_rules.json
+    - assets/config/medical_filter_patterns.json
+    - demo/seed_data.json
+    - demo/mock_health_data.json
