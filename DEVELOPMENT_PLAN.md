@@ -28,7 +28,7 @@ PREREQUISITE CHECK — do this before anything else:
 1. Create pubspec.yaml with these exact dependencies:
    flutter_riverpod: ^3.0.0, riverpod_annotation: ^3.0.0,
    go_router: ^14.0.0, drift: ^2.22.0, sqlcipher_flutter_libs: ^0.8.0,
-   drift_flutter: ^0.2.0, flutter_gemma: ^2.0.0, rive: ^0.13.0,
+   drift_flutter: ^0.2.0, flutter_gemma: ^2.0.0,
    confetti: ^0.7.0, health: ^12.0.0, pdf: ^3.11.0, printing: ^5.13.0,
    flutter_local_notifications: ^18.0.0, home_widget: ^0.5.0,
    flutter_secure_storage: ^9.2.0, freezed_annotation: ^2.4.0,
@@ -267,10 +267,10 @@ Fix any errors. Run: flutter analyze --no-pub
 ---
 
 ## Phase 3 — Pet Engine & Home Screen
-**Goal:** The pet lives on screen, responds to Rive state machine, streak visible, pet can die.
+**Goal:** The pet lives on screen, animated with simple PNGs (slight rocking), streak visible, pet can die.
 
-**Duration estimate:** 4–5 hours  
-**Dependencies:** Phase 2 complete, Rive `.riv` files in assets/animations/
+**Duration estimate:** 3–4 hours  
+**Dependencies:** Phase 2 complete, PNG files (or SVGs) in assets/images/pets/
 
 ### Sprint 3.1 — Riverpod providers + PetRenderer
 **Cursor prompt:**
@@ -282,11 +282,10 @@ Read before writing any code:
 - .cursor/rules/03-feature-logic.mdc
 - .cursor/skills/pet-engine/SKILL.md
 
-The Rive .riv files exist at assets/animations/cat.riv (and dog, rabbit, dragon). Each has:
-- StateMachine: "PetStateMachine"
-- Number input: "vitality" (0–100)
-- Boolean inputs: "checkInComplete", "isDead"
-- Number input: "timeOfDay" (0=morning, 1=day, 2=evening, 3=night)
+The pet UI uses static PNGs in assets/images/pets/ with simple Flutter animations:
+- State changes (vitality, isDead) swap out the PNG asset shown.
+- A simple rocking animation is applied continuously using a Flutter Tween or AnimatedBuilder.
+- TimeOfDay changes can affect background colors and lighting, independent of the pet PNG.
 
 Implement:
 
@@ -302,8 +301,9 @@ Implement:
    - updateWidgetData(PetState pet, List<int> sparkline) using home_widget package
 
 4. lib/features/pet/presentation/widgets/pet_renderer.dart:
-   - RiveAnimation.asset driven by petVitality Riverpod watch
-   - Handles disableAnimations: static image fallback from assets/widget_sprites/
+   - Displays a PNG image corresponding to the pet's species and vitality state
+   - Wraps the image with an AnimatedBuilder/Tween for a slight, continuous rocking effect
+   - Handles disableAnimations: strips the rocking effect leaving a static image
    - accessibilityLabel: "${pet.name} the ${pet.species}, ${pet.stateName}"
 
 5. lib/features/pet/presentation/widgets/streak_badge.dart — displays streak count
@@ -376,9 +376,10 @@ Implement:
 
 7. lib/features/check_in/presentation/widgets/companion_bubble.dart:
    - Speech bubble styled widget, attributed to pet
+   - Text relies on a "typing out" animated effect
    - Text is always MedicalContentFilter.filter(rawText).text
 
-On completion: pet reaction animation triggers (set checkInComplete input on Rive), confetti if milestone.
+On completion: pet reaction animation triggers (a single happy bounce of the PNG image), confetti if milestone.
 
 Run: flutter analyze --no-pub && flutter test test/features/check_in/
 Fix any errors. Report results.
@@ -511,7 +512,7 @@ Document the Android Glance sprint as post-hackathon work.
 After implementing native code:
 - On iOS: open the Xcode project, add the widget extension target, set the App Group entitlement on BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
 
-Note: The pet images used in widgets are static PNGs from assets/widget_sprites/ — NOT Rive files (Rive cannot run in widget extensions).
+Note: The pet images used in widgets mirror the identical static PNGs used in the main app from assets/images/pets/.
 
 Document any manual Xcode steps required (entitlements, target membership, etc.).
 ```
@@ -650,7 +651,7 @@ We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, p
 
 4. Polish pass:
    - Verify all notification copy uses pet name (no "your pet" fallback visible)
-   - Verify all Rive animations respect MediaQuery.disableAnimations
+   - Verify all Flutter rocking/bouncing animations and typing text effects respect MediaQuery.disableAnimations
    - Verify body map minimum touch targets 44×44 everywhere
    - Verify handoff PDF disclaimer is on every page
    - Verify flutter analyze --no-pub reports zero errors
