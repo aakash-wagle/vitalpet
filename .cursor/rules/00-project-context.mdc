@@ -10,6 +10,7 @@ VitalPet is a **Flutter** mobile app (iOS 16+ / Android 10+) that turns daily sy
 
 ## Tech stack (exact packages)
 - **Framework**: Flutter 3.x, Dart (Impeller renderer, 60/120fps)
+- **Platform**: iOS 16+ primary. Android is post-hackathon — do not write Android-specific code unless explicitly instructed.
 - **State management**: Riverpod 3.x (`flutter_riverpod`, `riverpod_annotation`)
 - **Navigation**: go_router 14.x
 - **Local DB**: drift 2.x (type-safe SQLite ORM) + `sqlcipher_flutter_libs` (AES-256 encryption)
@@ -93,12 +94,37 @@ vitalpet/
 - `flutter analyze` — static analysis (run after every significant change)
 - `flutter test` — run all unit tests
 - `flutter test test/features/slm/` — run tests for a single feature
-- `flutter run -d ios` — run on iOS simulator
-- `flutter run -d android` — run on Android emulator
+- `flutter run -d ios` — run on iOS simulator — primary development target
+- `flutter run -d android` — run on Android emulator — POST-HACKATHON only
 - `dart run build_runner build --delete-conflicting-outputs` — regenerate drift + Riverpod code
 - `dart scripts/seed_demo.dart` — seed the 30-day Maya/Mochi demo data
 - `bash native/ios/build_widget.sh` — build iOS WidgetKit extension
 - `bash native/android/build_widget.sh` — build Android Glance widget
+
+## iOS-first prerequisites
+These steps are required once before Sprint 0.1. If they have not been done,
+do them before running any flutter command.
+
+1. Switch to Flutter master channel (required for flutter_gemma native-assets):
+   flutter channel master && flutter upgrade
+
+2. Enable native-assets feature (required for MediaPipe linking):
+   flutter config --enable-native-assets
+
+3. The ios/Podfile must declare MediaPipe pods — Sprint 0.2 creates this file.
+   Without it, flutter_gemma will fail to link on iOS.
+
+4. Add to ios/Runner/Info.plist:
+   NSHealthShareUsageDescription:
+     "VitalPet reads steps, sleep, and heart rate to enrich your symptom check-ins."
+   NSHealthUpdateUsageDescription is NOT required — VitalPet is read-only.
+
+5. Model download is Wi-Fi only:
+   The Gemma 3n E2B int4 model is ~1.5 GB. This exceeds Apple's 200 MB
+   cellular download limit. Before calling modelManager.installModel(), check
+   connectivity using the `connectivity_plus` package. If on cellular, show a
+   prompt: "The AI model (~1.5 GB) requires a Wi-Fi connection to download."
+   Add connectivity_plus: ^6.0.0 to pubspec.yaml.
 
 ## Code style (Dart)
 - Use `final` for all local variables where possible

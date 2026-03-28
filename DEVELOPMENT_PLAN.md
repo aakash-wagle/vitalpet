@@ -17,6 +17,14 @@ Each phase is a self-contained unit of work. Each sprint is a single Cursor chat
 ```
 Read REPO_STRUCTURE.md in full. Then:
 
+PREREQUISITE CHECK — do this before anything else:
+1. Run: flutter channel
+   If the output does not show "master", run:
+   flutter channel master && flutter upgrade
+2. Run: flutter config --enable-native-assets
+3. Confirm both completed without error before proceeding.
+4. Add connectivity_plus: ^6.0.0 to pubspec.yaml under dependencies.
+
 1. Create pubspec.yaml with these exact dependencies:
    flutter_riverpod: ^3.0.0, riverpod_annotation: ^3.0.0,
    go_router: ^14.0.0, drift: ^2.22.0, sqlcipher_flutter_libs: ^0.8.0,
@@ -61,6 +69,24 @@ Read these files before writing any code:
 - .cursor/rules/05-data-layer.mdc (drift schema and conventions)
 
 Implement the following — no presentation layer, no business logic, data layer only:
+
+Step 0 — Create ios/Podfile (REQUIRED for flutter_gemma on iOS):
+
+Create the file ios/Podfile with exactly this content:
+
+  platform :ios, '16.0'
+
+  target 'Runner' do
+    use_frameworks!
+    pod 'MediaPipeTasksGenAI', '~> 0.10.24'
+    pod 'MediaPipeTasksGenAIC', '~> 0.10.24'
+  end
+
+Then run:
+  cd ios && pod install && cd ..
+
+Confirm pod install succeeded and report the installed pod versions.
+Only proceed to step 1 (drift schema) after pod install succeeds.
 
 1. lib/core/database/app_database.dart — implement all 6 drift Table classes (CheckIns, PetStateTable, BaselineStats, AuditLog, SlmContextCache, PetArchive) exactly as specified in .cursor/rules/05-data-layer.mdc. Add @DriftDatabase annotation with schemaVersion: 1 and MigrationStrategy(onCreate: (m) => m.createAll()).
 
@@ -477,21 +503,17 @@ For iOS (native/ios/VitalPetWidget/):
 4. WellnessSparkline.swift — SwiftUI Path: 7 bars, height proportional to score (1–10), grey for nil/missed
 5. VitalPetWidget.entitlements — App Group: group.com.vitalpet.shared
 
-For Android (native/android/widget/):
-1. VitalPetWidget.kt — GlanceAppWidget + GlanceAppWidgetReceiver
-2. WidgetDataProvider.kt — reads FlutterSharedPreferences (note: home_widget uses "flutter." prefix on all keys)
-3. PetWidgetContent.kt — @Composable for SizeMode.Responsive:
-   - Small: pet image + streak + action button
-   - Medium: same + WellnessSparkline
-4. WellnessSparkline.kt — Row of 7 colored Box composables
+Android Glance widget is OUT OF SCOPE for this iOS-first MVP.
+Do not implement native/android/widget/.
+Implement ONLY the iOS WidgetKit widget as specified above.
+Document the Android Glance sprint as post-hackathon work.
 
 After implementing native code:
 - On iOS: open the Xcode project, add the widget extension target, set the App Group entitlement on BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
-- On Android: add receiver to AndroidManifest.xml. Verify widget appears in widget picker.
 
 Note: The pet images used in widgets are static PNGs from assets/widget_sprites/ — NOT Rive files (Rive cannot run in widget extensions).
 
-Document any manual Xcode/Android Studio steps required (entitlements, target membership, etc.).
+Document any manual Xcode steps required (entitlements, target membership, etc.).
 ```
 
 ---
@@ -658,3 +680,27 @@ Final report: list every FR from the SRS and whether it is implemented, partial,
 - [ ] /audit command returns 0 FAIL
 - [ ] Demo device has no notification banners from other apps, full battery
 - [ ] Seed data loaded and handoff PDF pre-generated for pitch
+
+---
+
+## Post-hackathon: Android parity
+These sprints are explicitly out of scope for the hackathon build.
+Run them after the iOS version is stable and submitted.
+
+### Sprint A.1 — Android Glance widget
+Implement native/android/widget/ using Kotlin + Glance.
+Reference: .cursor/skills/native-widgets/SKILL.md (Android section).
+
+### Sprint A.2 — Health Connect integration
+The health package already supports Health Connect.
+Add Health Connect permissions to AndroidManifest.xml.
+Test on Android 14+ emulator.
+
+### Sprint A.3 — Android notification channels
+flutter_local_notifications requires explicit channel setup on Android.
+Add notification channel creation in main.dart for Android.
+
+### Sprint A.4 — Android E2E testing
+Run integration_test suite on Android emulator.
+Test model download over cellular warning on Android.
+Verify widget updates on Android 14+.

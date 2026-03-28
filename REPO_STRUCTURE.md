@@ -5,6 +5,17 @@
 
 ---
 
+## Platform
+iOS 16+ primary. Android is post-hackathon.
+
+## iOS setup prerequisites (one-time, before Sprint 0.1)
+```bash
+flutter channel master && flutter upgrade
+flutter config --enable-native-assets
+```
+Sprint 0.2 creates ios/Podfile with MediaPipe pods.
+Without the Podfile, flutter_gemma will not link on iOS.
+
 ## Stack summary
 - **Framework**: Flutter 3.x + Dart (Impeller renderer)
 - **State**: Riverpod 3.x (`flutter_riverpod`, `riverpod_annotation`)
@@ -17,6 +28,7 @@
 - **Notifications**: flutter_local_notifications 18.x
 - **Widgets**: WidgetKit Swift (iOS) + Glance Kotlin (Android) — mandatory native
 - **Widget data bridge**: home_widget 0.5.x
+- **Connectivity**: connectivity_plus: ^6.0.0   # Wi-Fi check before model download
 
 ---
 
@@ -150,7 +162,7 @@ vitalpet/                                          # Flutter project root
 │   │       └── Info.plist                         # widget extension plist
 │   │
 │   └── android/
-│       └── widget/                                # Kotlin Glance widget
+│       └── widget/                                # Kotlin Glance — POST-HACKATHON (Android parity sprint A.1)
 │           ├── VitalPetWidget.kt                  # GlanceAppWidget + GlanceAppWidgetReceiver
 │           ├── PetWidgetContent.kt                # @Composable for small + medium sizes
 │           ├── WidgetDataProvider.kt              # reads FlutterSharedPreferences (home_widget format)

@@ -4,6 +4,11 @@ globs: ["native/ios/**/*.swift", "native/android/**/*.kt"]
 alwaysApply: false
 ---
 
+> **iOS-first build:** Only the iOS WidgetKit widget is in scope for the
+> hackathon MVP. The Android Glance section is preserved as reference for
+> the post-hackathon Android parity sprint. Do not implement any Android
+> Glance code unless explicitly asked.
+
 # VitalPet — Native Widget Conventions
 
 ## Why native code exists at all
@@ -79,6 +84,9 @@ struct VitalPetProvider: TimelineProvider {
 The widget extension has read access to the App Group. Never write check-in answers, wellness scores (only sparkline averages), or symptom names to the App Group.
 
 ## Android Glance (Kotlin)
+
+> ⚠️ OUT OF SCOPE for iOS-first MVP. Implement in post-hackathon Sprint A.1.
+> Reference the native-widgets SKILL.md when the time comes.
 
 ### Reading shared data
 ```kotlin
