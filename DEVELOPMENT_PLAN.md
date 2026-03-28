@@ -118,6 +118,248 @@ Fix any errors. Report the final analyze result.
 
 ---
 
+### Sprint 0.2b — Check-in schema rewrite
+
+We are building VitalPet. Sprint 0.2 (database scaffold) is complete but the
+`CheckIns` table is being replaced. There is no existing data — breaking changes
+are intentional. Rewrite the schema from scratch; do not preserve any fields
+from the current `CheckIns` table that are not listed below.
+
+Read before writing any code:
+- `REPO_STRUCTURE.md`
+- `lib/core/database/app_database.dart` (current schema — replace, do not extend)
+
+---
+
+#### What to do
+
+##### 1. Replace `CheckIns` table in `app_database.dart`
+
+Remove the current `CheckIns` definition entirely and replace with:
+
+```dart
+class CheckIns extends Table {
+  TextColumn get id => text()();
+  TextColumn get utcDate => text()();
+  TextColumn get localDate => text()();
+  IntColumn get wellnessScore => integer()();
+  IntColumn get mode => integer()();
+  RealColumn get depthScore => real().withDefault(const Constant(0.0))();
+  BoolColumn get isPartial => boolean().withDefault(const Constant(false))();
+  TextColumn get amendedAt => text().nullable()();
+  TextColumn get createdAt => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+```
+
+Changes from the old definition: `answersJson` is removed entirely.
+
+---
+
+##### 2. Add new tables to `app_database.dart`
+
+###### `CheckInSymptoms`
+One row per symptom per check-in session.
+
+```dart
+class CheckInSymptoms extends Table {
+  TextColumn get id => text()();
+  TextColumn get checkInId => text().references(CheckIns, #id)();
+  TextColumn get category => text()(); // 'fever'|'pain'|'fatigue'|'nausea'|'other'
+  IntColumn get onsetDay => integer().nullable()(); // computed from history after insert
+  TextColumn get pattern => text().nullable()(); // category-specific enum value as string
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+```
+
+###### `SymptomFever`
+One row per fever symptom. FK → `CheckInSymptoms.id`.
+
+```dart
+class SymptomFever extends Table {
+  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+  RealColumn get temperature => real().nullable()();
+  TextColumn get unit => text().nullable()(); // 'C'|'F'
+  TextColumn get method => text().nullable()(); // 'oral'|'ear'|'forehead'|'other'
+  BoolColumn get skipped => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {symptomId};
+}
+```
+
+###### `SymptomPain`
+One row per pain symptom. FK → `CheckInSymptoms.id`.
+
+```dart
+class SymptomPain extends Table {
+  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+  TextColumn get regionsJson => text()(); // JSON array of body_region strings
+  TextColumn get type => text()(); // 'sharp'|'dull'|'throbbing'|'burning'|'cramping'|'aching'
+  TextColumn get triggersJson => text().nullable()(); // JSON array, nullable
+
+  @override
+  Set<Column> get primaryKey => {symptomId};
+}
+```
+
+###### `SymptomFatigue`
+One row per fatigue symptom. FK → `CheckInSymptoms.id`.
+
+```dart
+class SymptomFatigue extends Table {
+  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+  TextColumn get scope => text()(); // 'functional'|'wiped_out'|'debilitating'
+  BoolColumn get blocksDaily => boolean()();
+
+  @override
+  Set<Column> get primaryKey => {symptomId};
+}
+```
+
+###### `SymptomNausea`
+One row per nausea symptom. FK → `CheckInSymptoms.id`.
+
+```dart
+class SymptomNausea extends Table {
+  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+  BoolColumn get vomiting => boolean()();
+  TextColumn get vomitFreq => text().nullable()(); // 'once'|'few_times'|'persistent' — null if vomiting=false
+  TextColumn get appetite => text()(); // 'normal'|'reduced'|'none'
+  TextColumn get dehydrationSignsJson => text().nullable()(); // JSON array: 'dry_mouth'|'dark_urine'|'dizziness'
+
+  @override
+  Set<Column> get primaryKey => {symptomId};
+}
+```
+
+###### `SymptomOther`
+One row per other symptom. FK → `CheckInSymptoms.id`.
+
+```dart
+class SymptomOther extends Table {
+  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+  TextColumn get freeText => text()();
+  TextColumn get extractedDetailsJson => text().nullable()(); // best-effort SLM parse
+
+  @override
+  Set<Column> get primaryKey => {symptomId};
+}
+```
+
+###### `CheckInSubjective`
+One row per check-in. FK → `CheckIns.id`. All fields optional.
+
+```dart
+class CheckInSubjective extends Table {
+  TextColumn get checkInId => text().references(CheckIns, #id)();
+  TextColumn get freeNotes => text().nullable()();
+  TextColumn get slmTagsJson => text().nullable()(); // JSON array of strings
+  TextColumn get followUpExchangesJson => text().nullable()();
+  // JSON array of { role: 'user'|'assistant', content: string, timestamp: ISO8601 }
+
+  @override
+  Set<Column> get primaryKey => {checkInId};
+}
+```
+
+---
+
+##### 3. Update `@DriftDatabase` annotation
+
+```dart
+@DriftDatabase(tables: [
+  CheckIns,
+  CheckInSymptoms,
+  SymptomFever,
+  SymptomPain,
+  SymptomFatigue,
+  SymptomNausea,
+  SymptomOther,
+  CheckInSubjective,
+  PetStateTable,
+  BaselineStats,
+  AuditLog,
+  SlmContextCache,
+  PetArchive,
+])
+```
+
+Keep `schemaVersion: 1` — this is a clean install rewrite, not an upgrade.
+
+---
+
+##### 4. `MigrationStrategy` — onCreate only
+
+```dart
+@override
+MigrationStrategy get migration => MigrationStrategy(
+  onCreate: (m) async {
+    await m.createAll();
+  },
+);
+```
+
+No `onUpgrade` needed — there is no existing data to migrate.
+
+---
+
+##### 5. Replace `lib/core/database/migrations/migration_v1.dart`
+
+Rewrite to reflect the new schema. `onCreate` only — no upgrade paths.
+
+---
+
+##### 6. Create `lib/features/check_in/data/symptom_dao.dart`
+
+Implement `SymptomDao` with these methods only — no other logic:
+
+- `insertSymptom(CheckInSymptomsCompanion) → Future<void>`
+- `insertFever(SymptomFeverCompanion) → Future<void>`
+- `insertPain(SymptomPainCompanion) → Future<void>`
+- `insertFatigue(SymptomFatigueCompanion) → Future<void>`
+- `insertNausea(SymptomNauseaCompanion) → Future<void>`
+- `insertOther(SymptomOtherCompanion) → Future<void>`
+- `insertSubjective(CheckInSubjectiveCompanion) → Future<void>`
+- `getSymptomsForCheckIn(String checkInId) → Future<List<CheckInSymptom>>`
+- `getFullCheckIn(String checkInId)` — fetches the base symptom rows then fans out to each detail table in a single drift `transaction`. Return a plain Dart data class or record grouping all results.
+
+Register `SymptomDao` in `AppDatabase` with `@DriftAccessor(tables: [...])`.
+
+---
+
+##### 7. Update `lib/features/check_in/data/check_in_dao.dart`
+
+Remove any reference to `answersJson`. All other methods (`insertCheckIn`, `findByDateRange`, `findLatest`, `amendCheckIn`, `getStreakData`) stay — just ensure their `CheckInsCompanion` usage no longer references the removed field.
+
+---
+
+##### 8. After implementing
+
+Run:
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Then:
+```bash
+flutter analyze --no-pub
+```
+
+Fix any errors. Report the final analyze result and confirm `app_database.g.dart` was regenerated.
+
+---
+
+#### What NOT to change
+
+- Do not modify `PetStateTable`, `BaselineStats`, `AuditLog`, `SlmContextCache`, or `PetArchive`.
+- Do not implement any domain logic, UI, or Riverpod providers — data layer only.
+- Do not add any Firebase, analytics, or remote dependencies.
+
 ## Phase 1 — Domain Logic (no UI)
 
 **Goal:** All pure Dart business logic implemented and tested. Nothing shown on screen yet.
