@@ -53,7 +53,6 @@ class BaselineTracker {
     final scores =
         recent.map((f) => f.checkIn.wellnessScore.toDouble()).toList();
 
-    final n = recent.length;
     bool hasCategory(FullCheckIn f, SymptomCategory cat) =>
         f.symptoms.any((s) => s.symptom.category == cat.name);
 
