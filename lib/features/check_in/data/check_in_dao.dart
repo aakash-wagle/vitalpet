@@ -18,6 +18,13 @@ class CheckInDao extends DatabaseAccessor<AppDatabase>
     with _$CheckInDaoMixin {
   CheckInDao(super.db);
 
+  /// Return all check-ins ordered newest-first (used for data export).
+  Future<List<CheckIn>> findAll() {
+    return (select(checkIns)
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
+        .get();
+  }
+
   /// Insert a new check-in.
   /// Must always be called inside a [db.transaction()] block.
   Future<void> insertCheckIn(CheckInsCompanion companion) async {

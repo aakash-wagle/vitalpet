@@ -118,11 +118,29 @@ if (!await modelManager.isModelInstalled('gemma-3n-E2B-it-int4.task')) {
   await modelManager.installModel(
     modelType: ModelType.gemmaIt,
   ).fromNetwork(
-    'https://huggingface.co/.../gemma-3n-E2B-it-int4.task',
-    token: Env.hfToken, // loaded from dart-define, not hardcoded
+    'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
+    token: const String.fromEnvironment('HF_TOKEN'),
+    // Pass at build time: flutter run --dart-define=HF_TOKEN=hf_your_token_here
+    // NEVER hardcode the token. NEVER commit it to git.
   ).install();
 }
 ```
+
+## iOS memory constraint — important
+The gemma-3n-E2B-it-int4.task file is ~3.1 GB. iOS enforces a per-app
+memory limit that is lower than the device's total RAM. On devices with
+less than 8 GB RAM this will crash with:
+  Cannot allocate memory [type.googleapis.com/mediapipe.StatusList]
+
+If this crash occurs, switch to the smaller Gemma 3 1B model instead:
+  URL: https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1B-IT-int4.task
+  modelType: ModelType.gemmaIt
+  Size: ~0.7 GB — fits comfortably within iOS memory limits
+  Trade-off: lower quality responses but reliable on all modern iPhones
+
+To switch models, change both the URL and filename in the installModel call.
+The rest of the SLM pipeline (MedicalContentFilter, RuleBasedFallback,
+timeout handling) is unchanged.
 
 ## Testing
 ```dart

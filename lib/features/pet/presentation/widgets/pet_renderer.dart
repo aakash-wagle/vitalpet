@@ -1,37 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vitalpet/features/pet/domain/pet_notifier.dart';
 import 'package:vitalpet/features/pet/domain/pet_state.dart';
+import 'package:vitalpet/features/pet/domain/pet_state_mapper.dart';
 
 /// Renders the pet as a PNG image with a continuous rocking animation.
-/// Asset path: assets/images/pets/[species]_[stateIndex].png
-/// stateIndex: 1=thriving, 2=happy, 3=neutral, 4=unwell, 5=critical
-class PetRenderer extends StatefulWidget {
-  const PetRenderer({super.key, required this.petState});
-
-  final PetState petState;
+///
+/// Reads directly from [petProvider] so state changes (vitality threshold
+/// crossings) automatically swap the asset without any prop-drilling.
+///
+/// The display area has a solid black background — all dog PNGs have black
+/// backgrounds and must never be placed on a lighter surface.
+///
+/// When vitality == 0 the rocking animation is stopped and dies.png is shown
+/// without any additional colour filters — the asset is already appropriate
+/// for the death state.
+class PetRenderer extends ConsumerStatefulWidget {
+  const PetRenderer({super.key});
 
   @override
-  State<PetRenderer> createState() => _PetRendererState();
+  ConsumerState<PetRenderer> createState() => _PetRendererState();
 }
 
-class _PetRendererState extends State<PetRenderer>
+class _PetRendererState extends ConsumerState<PetRenderer>
     with TickerProviderStateMixin {
-  late AnimationController _rockController;
-  late Animation<double> _rockAnimation;
-
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
-
-  /// Maps PetStateEnum to the 1–5 PNG index used in asset filenames.
-  int get _stateIndex => switch (widget.petState.visualState) {
-        PetStateEnum.thriving => 1,
-        PetStateEnum.healthy => 2,
-        PetStateEnum.tired => 3,
-        PetStateEnum.unwell => 4,
-        PetStateEnum.critical || PetStateEnum.dead => 5,
-      };
-
-  String get _assetPath =>
-      'assets/images/pets/${widget.petState.species.name}_$_stateIndex.png';
+  late final AnimationController _rockController;
+  late final Animation<double> _rockAnimation;
+  late final AnimationController _bounceController;
+  late final Animation<double> _bounceAnimation;
 
   @override
   void initState() {
@@ -54,34 +50,54 @@ class _PetRendererState extends State<PetRenderer>
     );
   }
 
-  /// Call after a check-in completion to trigger a happy bounce.
+  /// Trigger a happy bounce on check-in completion.
+  /// Called externally by the check-in completion handler.
   void triggerHappyBounce() {
     _bounceController.forward().then((_) => _bounceController.reverse());
   }
 
   @override
+  void dispose() {
+    _rockController.dispose();
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pet = ref.watch(petProvider).value;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
-    final Widget image = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      child: Image.asset(
-        _assetPath,
-        key: ValueKey(_assetPath),
-        width: 200,
-        height: 200,
+    if (pet == null) return const SizedBox(width: 200, height: 200);
+
+    final assetPath = PetStateMapper.mapVitalityToState(pet.vitality);
+    final isDead = pet.visualState == PetStateEnum.dead;
+
+    final image = Container(
+      width: 200,
+      height: 200,
+      color: const Color(0xFF000000),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: Image.asset(
+          assetPath,
+          key: ValueKey(assetPath),
+          width: 200,
+          height: 200,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const SizedBox(
+            width: 200,
+            height: 200,
+            child: Icon(Icons.pets, size: 80, color: Colors.white),
+          ),
+        ),
       ),
     );
 
-    final semanticLabel =
-        '${widget.petState.name} the ${widget.petState.species.name}, '
-        '${widget.petState.visualState.name}';
+    final semanticLabel = '${pet.name}, ${pet.stateName}';
 
-    if (disableAnimations) {
-      return Semantics(
-        label: semanticLabel,
-        child: image,
-      );
+    if (disableAnimations || isDead) {
+      return Semantics(label: semanticLabel, child: image);
     }
 
     return Semantics(
@@ -98,12 +114,5 @@ class _PetRendererState extends State<PetRenderer>
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _rockController.dispose();
-    _bounceController.dispose();
-    super.dispose();
   }
 }

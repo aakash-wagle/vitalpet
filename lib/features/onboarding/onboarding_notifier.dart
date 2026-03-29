@@ -1,20 +1,22 @@
+import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:vitalpet/core/database/app_database.dart';
+import 'package:vitalpet/core/database/dao_providers.dart';
+import 'package:vitalpet/core/database/database_provider.dart';
 
 part 'onboarding_notifier.g.dart';
 
 class OnboardingState {
   const OnboardingState({
-    this.currentPage = 0,
-    this.selectedSpecies,
-    this.petName,
-    this.conditionFocus,
+    this.petName = '',
+    this.conditionFocus = '',
+    this.step = 0,
     this.isComplete = false,
   });
 
-  final int currentPage;
-  final String? selectedSpecies;
-  final String? petName;
-  final String? conditionFocus;
+  final String petName;
+  final String conditionFocus;
+  final int step;
   final bool isComplete;
 }
 
@@ -23,40 +25,58 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   @override
   OnboardingState build() => const OnboardingState();
 
-  void nextPage() {
-    state = OnboardingState(
-      currentPage: state.currentPage + 1,
-      selectedSpecies: state.selectedSpecies,
-      petName: state.petName,
-      conditionFocus: state.conditionFocus,
-    );
-  }
-
-  void selectSpecies(String species) {
-    state = OnboardingState(
-      currentPage: state.currentPage,
-      selectedSpecies: species,
-      petName: state.petName,
-      conditionFocus: state.conditionFocus,
-    );
-  }
-
   void setPetName(String name) {
     state = OnboardingState(
-      currentPage: state.currentPage,
-      selectedSpecies: state.selectedSpecies,
       petName: name,
       conditionFocus: state.conditionFocus,
+      step: state.step,
     );
   }
 
-  Future<void> complete() async {
-    // TODO: persist conditionFocus + create initial PetState
+  void setConditionFocus(String focus) {
     state = OnboardingState(
-      currentPage: state.currentPage,
-      selectedSpecies: state.selectedSpecies,
+      petName: state.petName,
+      conditionFocus: focus,
+      step: state.step,
+    );
+  }
+
+  void advance() {
+    state = OnboardingState(
       petName: state.petName,
       conditionFocus: state.conditionFocus,
+      step: state.step + 1,
+    );
+  }
+
+  /// Creates the initial PetState row in the encrypted DB (species='dog',
+  /// vitality=60, streak=0) and marks onboarding complete.
+  Future<void> complete() async {
+    final petDao = ref.read(petDaoProvider);
+    final db = ref.read(databaseProvider);
+    final petId = 'pet_${DateTime.now().millisecondsSinceEpoch}';
+
+    await db.transaction(() async {
+      await petDao.updatePetState(
+        PetStateTableCompanion(
+          petId: Value(petId),
+          name: Value(state.petName.trim()),
+          species: const Value('dog'),
+          vitality: const Value(60),
+          streak: const Value(0),
+          calmMode: const Value(false),
+          consecutiveBadDays: const Value(0),
+          freezeAvailable: const Value(true),
+          vulnerabilityCardShown: const Value(false),
+          vulnerabilityFrozen: const Value(false),
+        ),
+      );
+    });
+
+    state = OnboardingState(
+      petName: state.petName,
+      conditionFocus: state.conditionFocus,
+      step: state.step,
       isComplete: true,
     );
   }

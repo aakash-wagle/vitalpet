@@ -3,22 +3,30 @@ import 'package:vitalpet/features/handoff/chart_data_builder.dart';
 
 void main() {
   group('ChartDataBuilder', () {
-    late ChartDataBuilder builder;
+    final start = DateTime(2025, 6, 1);
+    final end = DateTime(2025, 6, 3);
 
-    setUp(() {
-      builder = const ChartDataBuilder();
+    test('buildTrendChart fills every day in the range', () {
+      final points = ChartDataBuilder.buildTrendChart([], start, end);
+      // 3 days: June 1, 2, 3
+      expect(points, hasLength(3));
+      expect(points.every((p) => p.type == TrendPointType.missed), isTrue);
     });
 
-    test('buildTrendChart returns one bar per check-in', () {
-      // TODO: implement
+    test('buildHeatmap handles empty input', () {
+      final map = ChartDataBuilder.buildHeatmap([]);
+      expect(map, isEmpty);
     });
 
-    test('buildHeatmap handles missed days gracefully', () {
-      // TODO: implement — missing days should produce intensity=0 cells
+    test('buildSymptomFrequency returns empty for empty input', () {
+      final freq = ChartDataBuilder.buildSymptomFrequency([]);
+      expect(freq, isEmpty);
     });
 
-    test('buildTrendChart is empty for empty input', () {
-      expect(builder.buildTrendChart([]), isEmpty);
+    test('buildNotableEvents returns empty for no notable points', () {
+      final points = ChartDataBuilder.buildTrendChart([], start, end);
+      final events = ChartDataBuilder.buildNotableEvents(points);
+      expect(events, isEmpty);
     });
   });
 }

@@ -1,10 +1,4 @@
 PODS:
-  - background_downloader (0.0.1):
-    - Flutter
-  - connectivity_plus (0.0.1):
-    - Flutter
-  - device_info_plus (0.0.1):
-    - Flutter
   - Flutter (1.0.0)
   - flutter_gemma (0.12.6):
     - Flutter
@@ -28,9 +22,6 @@ PODS:
   - MediaPipeTasksGenAIC (0.10.24)
   - printing (1.0.0):
     - Flutter
-  - shared_preferences_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - TensorFlowLiteC (0.0.1-nightly.20250619):
     - TensorFlowLiteC/Core (= 0.0.1-nightly.20250619)
   - TensorFlowLiteC/Core (0.0.1-nightly.20250619)
@@ -43,9 +34,6 @@ PODS:
   - TensorFlowLiteSwift/Privacy (0.0.1-nightly.20250619)
 
 DEPENDENCIES:
-  - background_downloader (from `.symlinks/plugins/background_downloader/ios`)
-  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
-  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_gemma (from `.symlinks/plugins/flutter_gemma/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
@@ -54,7 +42,6 @@ DEPENDENCIES:
   - home_widget (from `.symlinks/plugins/home_widget/ios`)
   - large_file_handler (from `.symlinks/plugins/large_file_handler/ios`)
   - printing (from `.symlinks/plugins/printing/ios`)
-  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -65,12 +52,6 @@ SPEC REPOS:
     - TensorFlowLiteSwift
 
 EXTERNAL SOURCES:
-  background_downloader:
-    :path: ".symlinks/plugins/background_downloader/ios"
-  connectivity_plus:
-    :path: ".symlinks/plugins/connectivity_plus/ios"
-  device_info_plus:
-    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
   flutter_gemma:
@@ -87,13 +68,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/large_file_handler/ios"
   printing:
     :path: ".symlinks/plugins/printing/ios"
-  shared_preferences_foundation:
-    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
-  background_downloader: 50e91d979067b82081aba359d7d916b3ba5fadad
-  connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
-  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_gemma: 7ce2780a9f4afaa3ba14efc24841415994e3b2c0
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
@@ -104,11 +80,10 @@ SPEC CHECKSUMS:
   MediaPipeTasksGenAI: 076ba7032a6e9da16db9c7cf0c3b67c751c18bc1
   MediaPipeTasksGenAIC: ec35d9f431f6a6b651a0bc9f67a4ed149ffa575c
   printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   TensorFlowLiteC: 215ef57653dd0fa09a474e7d94d79ae64a870b28
   TensorFlowLiteSelectTfOps: c71d7dcd063f5d66ae1b9a85cc5aa993f824eff9
   TensorFlowLiteSwift: 6de8da348de331778167a0f751ad74c41d8b0554
 
-PODFILE CHECKSUM: b24b2ed47fb102a8ef47a2152816cebb6902e51d
+PODFILE CHECKSUM: cbc08f20dfd2c26e8c7758c423714f36526ed571
 
 COCOAPODS: 1.16.2

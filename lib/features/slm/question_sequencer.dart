@@ -18,11 +18,31 @@ class QuestionSequencer {
 
   Future<SLMOutput> sequence(SLMContext context) async {
     try {
-      // TODO: build prompt from slm_prompt.txt + context, call _slmClient, parse output
-      throw UnimplementedError();
+      final prompt = _buildPrompt(context);
+      final raw = await _slmClient.generate(
+        prompt,
+        timeout: const Duration(milliseconds: 3000),
+      );
+      return _parseOutput(raw);
     } on SLMTimeoutException {
       final questions = _fallback.getQuestions(context);
       return SLMOutput(questions: questions, usedFallback: true);
+    } catch (_) {
+      // Any other failure (model not loaded, parse error) → fallback.
+      final questions = _fallback.getQuestions(context);
+      return SLMOutput(questions: questions, usedFallback: true);
     }
+  }
+
+  String _buildPrompt(SLMContext context) {
+    // TODO: load system prompt from config/slm_prompt.txt via rootBundle.
+    return 'wellness:${context.wellnessScore} '
+        'domains:${context.activeDomains.join(",")}';
+  }
+
+  SLMOutput _parseOutput(String raw) {
+    // TODO: implement JSON parsing against SLMOutput schema.
+    // Throw on malformed output — caught above and routed to fallback.
+    throw FormatException('SLM output parsing not yet implemented: $raw');
   }
 }

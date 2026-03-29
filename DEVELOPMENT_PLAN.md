@@ -66,6 +66,8 @@ Report which files were created and the result of flutter pub get.
 **Cursor prompt:**
 
 ```
+IMPORTANT: Do not create, modify, or overwrite ios/Podfile under any circumstances. The Podfile is stable and locked. Do not run pod install, pod deintegrate, or pod update.
+
 We are building VitalPet, a Flutter app. The database layer uses drift 2.x + sqlcipher_flutter_libs.
 
 Read these files before writing any code:
@@ -74,24 +76,6 @@ Read these files before writing any code:
 - .cursor/rules/05-data-layer.mdc (drift schema and conventions)
 
 Implement the following — no presentation layer, no business logic, data layer only:
-
-Step 0 — Create ios/Podfile (REQUIRED for flutter_gemma on iOS):
-
-Create the file ios/Podfile with exactly this content:
-
-  platform :ios, '16.0'
-
-  target 'Runner' do
-    use_frameworks!
-    pod 'MediaPipeTasksGenAI', '~> 0.10.24'
-    pod 'MediaPipeTasksGenAIC', '~> 0.10.24'
-  end
-
-Then run:
-  cd ios && pod install && cd ..
-
-Confirm pod install succeeded and report the installed pod versions.
-Only proceed to step 1 (drift schema) after pod install succeeds.
 
 1. lib/core/database/app_database.dart — implement all 6 drift Table classes (CheckIns, PetStateTable, BaselineStats, AuditLog, SlmContextCache, PetArchive) exactly as specified in .cursor/rules/05-data-layer.mdc. Add @DriftDatabase annotation with schemaVersion: 1 and MigrationStrategy(onCreate: (m) => m.createAll()).
 

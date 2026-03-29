@@ -62,3 +62,6 @@ assets/models/*.gguf
 *.keystore
 google-services.json
 GoogleService-Info.plist
+
+
+ios_backup/

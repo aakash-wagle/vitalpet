@@ -40,7 +40,7 @@ dependencies:
   flutter_local_notifications: ^18.0.0
 
   # Widget data bridge
-  home_widget: ^0.5.0
+  home_widget: ^0.7.0
 
   # Security / encryption
   flutter_secure_storage: ^9.2.0
@@ -60,6 +60,12 @@ dependencies:
 
   # Connectivity (Wi-Fi check before model download)
   connectivity_plus: ^6.0.0
+
+  # File sharing (data export)
+  share_plus: ^10.0.0
+
+  # Temp file path for export
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +91,7 @@ flutter:
     - assets/animations/
     - assets/config/
     - assets/fonts/
+    - assets/images/pets/
 
   # fonts:
   #   - family: AppFont
