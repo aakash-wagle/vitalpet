@@ -71,15 +71,104 @@ void main() {
     });
   });
 
+  group('PetStateMapper.mapLastCheckinToStateAsset', () {
+    final now = DateTime.utc(2026, 3, 29, 12);
+
+    test('null check-in defaults to greeting', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(null, now: now),
+        'assets/images/pets/greeting.png',
+      );
+    });
+
+    test('2 days since last check-in -> greeting', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 2)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/greeting.png',
+      );
+    });
+
+    test('3-5 days since last check-in -> sad', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 3)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/sad.png',
+      );
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 5)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/sad.png',
+      );
+    });
+
+    test('6-8 days since last check-in -> depressed', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 6)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/depressed.png',
+      );
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 8)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/depressed.png',
+      );
+    });
+
+    test('9-12 days since last check-in -> sick', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 9)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/sick.png',
+      );
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 12)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/sick.png',
+      );
+    });
+
+    test('13+ days since last check-in -> dead', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset(
+          now.subtract(const Duration(days: 13)).toIso8601String(),
+          now: now,
+        ),
+        'assets/images/pets/dies.png',
+      );
+    });
+
+    test('invalid timestamp -> dead', () {
+      expect(
+        PetStateMapper.mapLastCheckinToStateAsset('not-a-date', now: now),
+        'assets/images/pets/dies.png',
+      );
+    });
+  });
+
   group('PetState.stateIndex', () {
     PetState makePet(PetStateEnum vs) => PetState(
-          petId: 'test',
-          name: 'Mochi',
-          species: PetSpecies.cat,
-          vitality: 60,
-          visualState: vs,
-          streak: 0,
-        );
+      petId: 'test',
+      name: 'Mochi',
+      species: PetSpecies.cat,
+      vitality: 60,
+      visualState: vs,
+      streak: 0,
+    );
 
     test('thriving → stateIndex 1', () {
       expect(makePet(PetStateEnum.thriving).stateIndex, 1);
@@ -108,13 +197,13 @@ void main() {
 
   group('PetState.stateName', () {
     PetState makePet(PetStateEnum vs) => PetState(
-          petId: 'test',
-          name: 'Mochi',
-          species: PetSpecies.cat,
-          vitality: 60,
-          visualState: vs,
-          streak: 0,
-        );
+      petId: 'test',
+      name: 'Mochi',
+      species: PetSpecies.cat,
+      vitality: 60,
+      visualState: vs,
+      streak: 0,
+    );
 
     test('thriving state name', () {
       expect(makePet(PetStateEnum.thriving).stateName, 'thriving');

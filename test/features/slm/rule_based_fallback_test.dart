@@ -1,21 +1,57 @@
 import 'package:flutter_test/flutter_test.dart';
-// ignore: unused_import — will be used when tests are implemented
 import 'package:vitalpet/features/slm/rule_based_fallback.dart';
-// ignore: unused_import
 import 'package:vitalpet/features/slm/slm_context.dart';
 
 void main() {
   group('RuleBasedFallback', () {
-    test('returns default domain order for unknown conditionFocus', () {
-      // TODO: implement
+    const fallback = RuleBasedFallback({});
+
+    test('asks only selected symptom domains', () {
+      const context = SLMContext(
+        overallStatus: 'not_great',
+        activeDomains: ['pain', 'nausea'],
+        baselines: {},
+      );
+
+      final questions = fallback.getQuestions(context);
+
+      expect(questions.map((q) => q.domain), ['pain', 'nausea']);
     });
 
-    test('returns condition-specific domain order for known condition', () {
-      // TODO: implement
+    test('does not ask gate questions for unselected domains', () {
+      const context = SLMContext(
+        overallStatus: 'not_great',
+        activeDomains: ['fatigue'],
+        baselines: {},
+      );
+
+      final questions = fallback.getQuestions(context);
+
+      expect(questions.length, 1);
+      expect(questions.first.domain, 'fatigue');
+      expect(questions.first.prompt, isNot('Are you experiencing any pain?'));
     });
 
-    test('returns non-empty list', () {
-      // TODO: implement
+    test('returns empty list when no domains selected', () {
+      const context = SLMContext(
+        overallStatus: 'not_great',
+        activeDomains: [],
+        baselines: {},
+      );
+
+      final questions = fallback.getQuestions(context);
+      expect(questions, isEmpty);
+    });
+
+    test('returns empty list for great status', () {
+      const context = SLMContext(
+        overallStatus: 'great',
+        activeDomains: ['pain', 'fatigue', 'nausea'],
+        baselines: {},
+      );
+
+      final questions = fallback.getQuestions(context);
+      expect(questions, isEmpty);
     });
   });
 }

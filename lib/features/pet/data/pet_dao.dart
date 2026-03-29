@@ -15,7 +15,29 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
   /// Insert or replace the pet state row.
   /// Use a [db.transaction()] when updating state alongside a check-in write.
   Future<void> updatePetState(PetStateTableCompanion companion) async {
-    await into(petStateTable).insertOnConflictUpdate(companion);
+    if (!companion.petId.present) {
+      throw ArgumentError(
+        'PetStateTableCompanion.petId must be present for updatePetState',
+      );
+    }
+
+    // Full companion (onboarding/new row): upsert is safe and desired.
+    if (companion.name.present && companion.species.present) {
+      await into(petStateTable).insertOnConflictUpdate(companion);
+      return;
+    }
+
+    // Partial companion (runtime field patch): never insert, update only.
+    // This avoids Drift attempting an insert with missing required fields.
+    final petId = companion.petId.value;
+    final updateCompanion = companion.copyWith(
+      petId: const Value.absent(),
+      rowid: const Value.absent(),
+    );
+
+    await (update(
+      petStateTable,
+    )..where((t) => t.petId.equals(petId))).write(updateCompanion);
   }
 
   /// Delete the active pet state row (used during archive + restart flow).

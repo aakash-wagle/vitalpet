@@ -90,8 +90,10 @@ flutter:
   assets:
     - assets/animations/
     - assets/config/
+    - assets/demo/scenarios/
     - assets/fonts/
     - assets/images/pets/
+    - assets/models/
 
   # fonts:
   #   - family: AppFont

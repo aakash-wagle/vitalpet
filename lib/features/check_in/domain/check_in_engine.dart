@@ -76,6 +76,10 @@ class CheckInEngine {
     final symptoms = partial.symptomsJson.isNotEmpty
         ? SymptomEntry.decodeList(partial.symptomsJson)
         : <SymptomEntry>[];
+    final activeDomains = _activeDomainsForSequencing(
+      answers: answers,
+      symptoms: symptoms,
+    );
     final mode = selectMode(partial.overallStatus);
 
     // Re-fetch questions for remaining flow
@@ -84,7 +88,7 @@ class CheckInEngine {
 
     final slmCtx = SLMContext(
       overallStatus: partial.overallStatus,
-      activeDomains: const ['fever', 'pain', 'fatigue', 'nausea', 'other'],
+      activeDomains: activeDomains,
       baselines: const {},
     );
     final output = await questionSequencer.sequence(slmCtx);
@@ -142,6 +146,41 @@ class CheckInEngine {
     );
   }
 
+  /// Uses pre-structured symptom entries (from free-text parsing) and jumps
+  /// directly to follow-up questions, skipping per-category button flow.
+  Future<CheckInSessionState> beginFromStructuredSymptoms(
+    String overallStatus,
+    List<SymptomEntry> symptoms,
+  ) async {
+    if (symptoms.isEmpty) {
+      return beginSymptomDetails(overallStatus, const [SymptomCategory.other]);
+    }
+
+    final activeDomains = <String>[];
+    for (final symptom in symptoms) {
+      final domain = symptom.category.name;
+      if (!activeDomains.contains(domain)) {
+        activeDomains.add(domain);
+      }
+    }
+
+    final slmCtx = SLMContext(
+      overallStatus: overallStatus,
+      activeDomains: activeDomains,
+      baselines: const {},
+    );
+    final output = await questionSequencer.sequence(slmCtx);
+
+    return CheckInSessionState.collectingAnswers(
+      overallStatus: overallStatus,
+      mode: CheckInMode.standard,
+      questions: output.questions,
+      currentIndex: 0,
+      answers: const [],
+      symptoms: symptoms,
+    );
+  }
+
   /// Submit an answer for the current symptom detail step.
   /// Returns the next state (next step, next category, or done with symptoms).
   Future<CheckInSessionState> submitSymptomDetail(
@@ -150,9 +189,8 @@ class CheckInEngine {
     dynamic value,
   ) async {
     final data = current.whenOrNull(
-      collectingSymptomDetails: (overallStatus, categories, catIdx,
-              collected, step, catData) =>
-          (
+      collectingSymptomDetails:
+          (overallStatus, categories, catIdx, collected, step, catData) => (
             overallStatus: overallStatus,
             categories: categories,
             catIdx: catIdx,
@@ -165,8 +203,7 @@ class CheckInEngine {
       throw StateError('submitSymptomDetail called in wrong state');
     }
 
-    final updatedData = Map<String, dynamic>.from(data.catData)
-      ..[key] = value;
+    final updatedData = Map<String, dynamic>.from(data.catData)..[key] = value;
     final category = data.categories[data.catIdx];
     final totalSteps = _stepsForCategory(category);
     final nextStep = data.step + 1;
@@ -174,8 +211,7 @@ class CheckInEngine {
     if (nextStep >= totalSteps) {
       // Finished this category — build SymptomEntry
       final pattern = updatedData['pattern'] as String? ?? '';
-      final details = Map<String, dynamic>.from(updatedData)
-        ..remove('pattern');
+      final details = Map<String, dynamic>.from(updatedData)..remove('pattern');
 
       final entry = SymptomEntry(
         category: category,
@@ -190,8 +226,7 @@ class CheckInEngine {
         // All categories done — move to SLM questions or completion
         final slmCtx = SLMContext(
           overallStatus: data.overallStatus,
-          activeDomains:
-              data.categories.map((c) => c.name).toList(),
+          activeDomains: data.categories.map((c) => c.name).toList(),
           baselines: const {},
         );
         final output = await questionSequencer.sequence(slmCtx);
@@ -232,9 +267,15 @@ class CheckInEngine {
     QuestionAnswer answer,
   ) {
     return current.whenOrNull(
-          collectingAnswers: (overallStatus, mode, questions, currentIndex,
-                  answers, symptoms) =>
-              CheckInSessionState.collectingAnswers(
+          collectingAnswers:
+              (
+                overallStatus,
+                mode,
+                questions,
+                currentIndex,
+                answers,
+                symptoms,
+              ) => CheckInSessionState.collectingAnswers(
                 overallStatus: overallStatus,
                 mode: mode,
                 questions: questions,
@@ -260,9 +301,9 @@ class CheckInEngine {
       },
       collectingSymptomDetails:
           (os, categories, catIdx, collected, step, catData) {
-        overallStatus = os;
-        symptoms = collected;
-      },
+            overallStatus = os;
+            symptoms = collected;
+          },
       selectingSymptoms: (os) {
         overallStatus = os;
       },
@@ -303,7 +344,8 @@ class CheckInEngine {
   /// Atomically writes check-in, updates pet state, appends audit entry,
   /// and checks vulnerability safeguard.
   Future<CompleteSessionResult> completeSession(
-      CheckInSessionState current) async {
+    CheckInSessionState current,
+  ) async {
     String overallStatus = 'great';
     CheckInMode mode = CheckInMode.light;
     List<SLMQuestion> questions = [];
@@ -320,10 +362,10 @@ class CheckInEngine {
       },
       collectingSymptomDetails:
           (os, categories, catIdx, collected, step, catData) {
-        overallStatus = os;
-        mode = CheckInMode.standard;
-        symptoms = collected;
-      },
+            overallStatus = os;
+            mode = CheckInMode.standard;
+            symptoms = collected;
+          },
     );
 
     final sessionId = _sessionId(overallStatus, answers);
@@ -341,8 +383,7 @@ class CheckInEngine {
     final isConsecutive = _isConsecutiveDay(petRow.lastCheckinUtc, utcDate);
     final newStreak = isConsecutive ? petRow.streak + 1 : 1;
     final isNotGreat = overallStatus == 'not_great';
-    final newBadDays =
-        isNotGreat ? petRow.consecutiveBadDays + 1 : 0;
+    final newBadDays = isNotGreat ? petRow.consecutiveBadDays + 1 : 0;
 
     final missedDays = _missedDays(petRow.lastCheckinUtc);
     final newVitality = calculateVitality(
@@ -445,10 +486,10 @@ class CheckInEngine {
   int _stepsForCategory(SymptomCategory category) {
     return switch (category) {
       SymptomCategory.fever => 2, // temp+skipped, pattern
-      SymptomCategory.pain => 3,  // regions, type, pattern
+      SymptomCategory.pain => 3, // regions, type, pattern
       SymptomCategory.fatigue => 2, // scope, pattern
       SymptomCategory.nausea => 2, // vomiting+appetite, pattern
-      SymptomCategory.other => 1,   // free_text
+      SymptomCategory.other => 1, // free_text
     };
   }
 
@@ -510,8 +551,9 @@ class CheckInEngine {
     try {
       final last = DateTime.parse(lastCheckinUtc).toUtc();
       final today = DateTime.parse(todayUtc);
-      final diff =
-          today.difference(DateTime.utc(last.year, last.month, last.day));
+      final diff = today.difference(
+        DateTime.utc(last.year, last.month, last.day),
+      );
       return diff.inDays == 1;
     } catch (_) {
       return false;
@@ -523,5 +565,27 @@ class CheckInEngine {
     final last = DateTime.parse(lastCheckinUtc).toUtc();
     final today = DateTime.now().toUtc();
     return (today.difference(last).inDays - 1).clamp(0, 30);
+  }
+
+  List<String> _activeDomainsForSequencing({
+    required List<QuestionAnswer> answers,
+    required List<SymptomEntry> symptoms,
+  }) {
+    final allowed = SymptomCategory.values.map((e) => e.name).toSet();
+    final domains = <String>[];
+
+    for (final symptom in symptoms) {
+      final domain = symptom.category.name;
+      if (!domains.contains(domain)) domains.add(domain);
+    }
+
+    for (final answer in answers) {
+      final domain = answer.domain;
+      if (allowed.contains(domain) && !domains.contains(domain)) {
+        domains.add(domain);
+      }
+    }
+
+    return domains;
   }
 }

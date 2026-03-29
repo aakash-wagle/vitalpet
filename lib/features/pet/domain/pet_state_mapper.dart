@@ -36,6 +36,35 @@ class PetStateMapper {
     return 'assets/images/pets/dies.png';
   }
 
+  /// Returns the pet asset from days since last check-in.
+  ///
+  /// Mapping:
+  /// - 0..2 days  -> greeting.png
+  /// - 3..5 days  -> sad.png
+  /// - 6..8 days  -> depressed.png
+  /// - 9..12 days -> sick.png
+  /// - >12 days   -> dies.png
+  ///
+  /// If no check-in exists yet, defaults to greeting.png.
+  static String mapLastCheckinToStateAsset(
+    String? lastCheckinUtc, {
+    DateTime? now,
+  }) {
+    if (lastCheckinUtc == null) return 'assets/images/pets/greeting.png';
+
+    final nowUtc = (now ?? DateTime.now()).toUtc();
+    final lastUtc = DateTime.tryParse(lastCheckinUtc)?.toUtc();
+    if (lastUtc == null) return 'assets/images/pets/dies.png';
+
+    final daysSince = nowUtc.difference(lastUtc).inDays.clamp(0, 1000000);
+
+    if (daysSince <= 2) return 'assets/images/pets/greeting.png';
+    if (daysSince <= 5) return 'assets/images/pets/sad.png';
+    if (daysSince <= 8) return 'assets/images/pets/depressed.png';
+    if (daysSince <= 12) return 'assets/images/pets/sick.png';
+    return 'assets/images/pets/dies.png';
+  }
+
   /// Returns the asset path for a special pet moment.
   static String specialAsset(SpecialPetMoment moment) {
     return switch (moment) {

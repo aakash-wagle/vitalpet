@@ -6,6 +6,7 @@ import 'package:vitalpet/core/constants/app_constants.dart';
 import 'package:vitalpet/core/database/app_database.dart';
 import 'package:vitalpet/core/database/database_provider.dart';
 import 'package:vitalpet/core/encryption/encryption_service.dart';
+import 'package:vitalpet/dev/demo_seed_loader.dart';
 import 'package:vitalpet/features/pet/data/pet_dao.dart';
 import 'package:vitalpet/presentation/router/app_router.dart';
 import 'package:vitalpet/presentation/theme/app_theme.dart';
@@ -43,6 +44,8 @@ void main() async {
       db = openEncryptedDatabase(dbKey);
     }
   }
+
+  await seedDemoScenarioIfEnabled(db);
 
   runApp(
     ProviderScope(

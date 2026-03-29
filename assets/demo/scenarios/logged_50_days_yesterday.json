@@ -1,0 +1,8 @@
+{
+  "scenarioId": "logged_50_days_yesterday",
+  "petName": "Mochi",
+  "petSpecies": "cat",
+  "totalLoggedDays": 50,
+  "lastLoggedDaysAgo": 1,
+  "notGreatEvery": 6
+}

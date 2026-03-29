@@ -6,15 +6,14 @@ import 'package:vitalpet/features/pet/domain/pet_state_mapper.dart';
 
 /// Renders the pet as a PNG image with a continuous rocking animation.
 ///
-/// Reads directly from [petProvider] so state changes (vitality threshold
-/// crossings) automatically swap the asset without any prop-drilling.
+/// Reads directly from [petProvider] so state changes (last-check-in recency)
+/// automatically swap the asset without any prop-drilling.
 ///
 /// Pet PNG assets include transparency, so the display area should not force a
 /// solid background color.
 ///
-/// When vitality == 0 the rocking animation is stopped and dies.png is shown
-/// without any additional colour filters — the asset is already appropriate
-/// for the death state.
+/// When the pet is marked dead in state, rocking is stopped and dies.png is
+/// shown without any additional colour filters.
 class PetRenderer extends ConsumerStatefulWidget {
   const PetRenderer({super.key});
 
@@ -70,8 +69,10 @@ class _PetRendererState extends ConsumerState<PetRenderer>
 
     if (pet == null) return const SizedBox(width: 200, height: 200);
 
-    final assetPath = PetStateMapper.mapVitalityToState(pet.vitality);
     final isDead = pet.visualState == PetStateEnum.dead;
+    final assetPath = isDead
+        ? 'assets/images/pets/dies.png'
+        : PetStateMapper.mapLastCheckinToStateAsset(pet.lastCheckinUtc);
 
     final image = SizedBox(
       width: 200,

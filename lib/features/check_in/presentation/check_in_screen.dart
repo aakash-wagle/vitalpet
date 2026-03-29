@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -178,11 +176,9 @@ class _OverallStatusBodyState extends ConsumerState<_OverallStatusBody> {
 
     final Widget petImage;
     if (petAsync.value != null) {
-      final assetPath = PetStateMapper.mapVitalityToState(
-        petAsync.value!.vitality,
-      );
+      const assetPath = 'assets/images/pets/curious.png';
       petImage = SizedBox(
-        key: ValueKey(assetPath),
+        key: const ValueKey(assetPath),
         width: 120,
         height: 120,
         child: Image.asset(
@@ -381,38 +377,9 @@ class _SymptomCategorySelectorState
           _TextInputAlternative(
             hint: 'Or describe what you\'re feeling...',
             onSubmit: (text) {
-              // Auto-detect categories from text
-              final lower = text.toLowerCase();
-              final detected = <SymptomCategory>{};
-              if (lower.contains('fever') ||
-                  lower.contains('temperature') ||
-                  lower.contains('hot')) {
-                detected.add(SymptomCategory.fever);
-              }
-              if (lower.contains('pain') ||
-                  lower.contains('hurt') ||
-                  lower.contains('ache') ||
-                  lower.contains('sore')) {
-                detected.add(SymptomCategory.pain);
-              }
-              if (lower.contains('tired') ||
-                  lower.contains('fatigue') ||
-                  lower.contains('exhausted') ||
-                  lower.contains('energy')) {
-                detected.add(SymptomCategory.fatigue);
-              }
-              if (lower.contains('nausea') ||
-                  lower.contains('vomit') ||
-                  lower.contains('sick') ||
-                  lower.contains('throw up')) {
-                detected.add(SymptomCategory.nausea);
-              }
-              if (detected.isEmpty) {
-                detected.add(SymptomCategory.other);
-              }
               ref
                   .read(checkInSessionProvider.notifier)
-                  .selectSymptomCategories(detected.toList());
+                  .submitUnstructuredSymptoms(text);
             },
           ),
           const SizedBox(height: 16),
@@ -553,10 +520,14 @@ class _SymptomDetailBody extends ConsumerStatefulWidget {
 
 class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
   final _textController = TextEditingController();
+  final _temperatureController = TextEditingController();
+  bool _hasThermometer = true;
+  String _temperatureUnit = 'F';
 
   @override
   void dispose() {
     _textController.dispose();
+    _temperatureController.dispose();
     super.dispose();
   }
 
@@ -601,9 +572,21 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
     // For text input, auto-fill with reasonable defaults and skip ahead
     switch (widget.category) {
       case SymptomCategory.fever:
-        ref
-            .read(checkInSessionProvider.notifier)
-            .submitSymptomDetail('pattern', 'intermittent');
+        if (widget.step == 0) {
+          ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
+            'measurement',
+            {
+              'has_thermometer': false,
+              'value': null,
+              'unit': null,
+              'note': text,
+            },
+          );
+        } else {
+          ref
+              .read(checkInSessionProvider.notifier)
+              .submitSymptomDetail('pattern', 'intermittent');
+        }
         break;
       case SymptomCategory.pain:
         ref
@@ -652,18 +635,86 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
 
   Widget _buildFeverStep() {
     if (widget.step == 0) {
-      return _buildBinaryQuestion(
-        'Do you have a thermometer to measure your temperature?',
-        onYes: () {
-          ref
-              .read(checkInSessionProvider.notifier)
-              .submitSymptomDetail('skipped', false);
-        },
-        onNo: () {
-          ref
-              .read(checkInSessionProvider.notifier)
-              .submitSymptomDetail('skipped', true);
-        },
+      final parsedTemperature = double.tryParse(_temperatureController.text);
+      final canContinue = !_hasThermometer || parsedTemperature != null;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Do you have a thermometer to measure your temperature?',
+            style: AppTextStyles.bodyLarge,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: const Text('Yes'),
+                  selected: _hasThermometer,
+                  onSelected: (_) => setState(() => _hasThermometer = true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ChoiceChip(
+                  label: const Text('No'),
+                  selected: !_hasThermometer,
+                  onSelected: (_) => setState(() => _hasThermometer = false),
+                ),
+              ),
+            ],
+          ),
+          if (_hasThermometer) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _temperatureController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Temperature reading',
+                      hintText: 'e.g. 101.3',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: _temperatureUnit,
+                  items: const [
+                    DropdownMenuItem(value: 'F', child: Text('°F')),
+                    DropdownMenuItem(value: 'C', child: Text('°C')),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _temperatureUnit = value);
+                  },
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton(
+              onPressed: !canContinue
+                  ? null
+                  : () => ref
+                        .read(checkInSessionProvider.notifier)
+                        .submitSymptomDetail('measurement', {
+                          'has_thermometer': _hasThermometer,
+                          'value': _hasThermometer ? parsedTemperature : null,
+                          'unit': _hasThermometer ? _temperatureUnit : null,
+                        }),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Continue'),
+            ),
+          ),
+        ],
       );
     }
     return _buildOptionsList(
@@ -1315,65 +1366,23 @@ class _CompletedBody extends ConsumerStatefulWidget {
 }
 
 class _CompletedBodyState extends ConsumerState<_CompletedBody> {
-  bool _showCelebrating = false;
-  Timer? _celebratingTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.hadMilestone) {
-      _showCelebrating = true;
-      _celebratingTimer = Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _showCelebrating = false);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _celebratingTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final petAsync = ref.watch(petProvider);
     final pet = petAsync.value;
 
-    final Widget petImage;
-    if (_showCelebrating) {
-      petImage = SizedBox(
-        key: const ValueKey('celebrating'),
+    final petImage = SizedBox(
+      key: const ValueKey('celebrating'),
+      width: 140,
+      height: 140,
+      child: Image.asset(
+        PetStateMapper.specialAsset(SpecialPetMoment.milestone),
         width: 140,
         height: 140,
-        child: Image.asset(
-          PetStateMapper.specialAsset(SpecialPetMoment.milestone),
-          width: 140,
-          height: 140,
-          fit: BoxFit.contain,
-        ),
-      );
-    } else if (pet != null) {
-      final assetPath = PetStateMapper.mapVitalityToState(pet.vitality);
-      petImage = SizedBox(
-        key: ValueKey(assetPath),
-        width: 140,
-        height: 140,
-        child: Image.asset(
-          assetPath,
-          width: 140,
-          height: 140,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox(width: 140, height: 140),
-        ),
-      );
-    } else {
-      petImage = const SizedBox(
-        key: ValueKey('empty'),
-        width: 140,
-        height: 140,
-      );
-    }
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const SizedBox(width: 140, height: 140),
+      ),
+    );
 
     return Center(
       child: Padding(

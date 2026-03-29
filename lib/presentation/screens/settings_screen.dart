@@ -252,37 +252,19 @@ class _HealthConnectionTile extends ConsumerStatefulWidget {
 }
 
 class _HealthConnectionTileState extends ConsumerState<_HealthConnectionTile> {
-  bool _connected = false;
-  bool _loading = false;
-
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.monitor_heart_outlined),
-      title: const Text('Health platform'),
+    return const SwitchListTile(
+      secondary: Icon(Icons.monitor_heart_outlined),
+      title: Text('Health platform'),
       subtitle: Text(
-        _connected ? 'Steps, sleep & heart rate synced' : 'Not connected',
+        'Disabled in this build (no special permissions requested)',
         style: AppTextStyles.bodyMedium,
       ),
-      value: _connected,
+      value: false,
       activeThumbColor: AppColors.primary,
-      onChanged: _loading ? null : _toggleHealth,
+      onChanged: null,
     );
-  }
-
-  Future<void> _toggleHealth(bool enable) async {
-    setState(() => _loading = true);
-    try {
-      if (enable) {
-        // Permission request is handled inside HealthAdapter.fetchSummary —
-        // if denied it returns null and we leave the toggle off.
-        setState(() => _connected = true);
-      } else {
-        setState(() => _connected = false);
-      }
-    } finally {
-      setState(() => _loading = false);
-    }
   }
 }
 
