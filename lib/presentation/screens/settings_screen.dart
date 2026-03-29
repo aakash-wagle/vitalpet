@@ -58,8 +58,8 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: petAsync.isLoading || pet == null
                 ? null
                 : (enabled) => ref
-                    .read(petProvider.notifier)
-                    .setCalmMode(enabled: enabled),
+                      .read(petProvider.notifier)
+                      .setCalmMode(enabled: enabled),
           ),
 
           const Divider(indent: 16, endIndent: 16),
@@ -100,8 +100,8 @@ class SettingsScreen extends ConsumerWidget {
             onTap: pet == null
                 ? null
                 : () => pet.deletionScheduledAt != null
-                    ? _cancelDeletion(context, ref)
-                    : _confirmDeletion(context, ref),
+                      ? _cancelDeletion(context, ref)
+                      : _confirmDeletion(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -124,7 +124,9 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (picked == null) return;
 
-    await ref.read(notificationSchedulerProvider).schedulePrimary(
+    await ref
+        .read(notificationSchedulerProvider)
+        .schedulePrimary(
           petName: pet.name,
           petStateIndex: pet.stateIndex,
           time: picked,
@@ -133,9 +135,7 @@ class SettingsScreen extends ConsumerWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Reminder set for ${picked.format(context)}',
-          ),
+          content: Text('Reminder set for ${picked.format(context)}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -177,9 +177,7 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Start countdown'),
           ),
@@ -320,9 +318,7 @@ class _CompanionsSection extends ConsumerWidget {
         }
 
         return Column(
-          children: archive
-              .map((pet) => _CompanionTile(pet: pet))
-              .toList(),
+          children: archive.map((pet) => _CompanionTile(pet: pet)).toList(),
         );
       },
     );
@@ -376,22 +372,16 @@ class _PetAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Circular avatar with black background showing the thriving (state 1) pet.
+    // Circular avatar showing the thriving (state 1) pet.
     return ClipOval(
-      child: ColoredBox(
-        color: Colors.black,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Image.asset(
-            'assets/images/pets/${species}_1.png',
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.pets,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Image.asset(
+          'assets/images/pets/${species}_1.png',
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.pets, color: Colors.white, size: 24),
         ),
       ),
     );

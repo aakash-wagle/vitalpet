@@ -9,8 +9,8 @@ import 'package:vitalpet/features/pet/domain/pet_state_mapper.dart';
 /// Reads directly from [petProvider] so state changes (vitality threshold
 /// crossings) automatically swap the asset without any prop-drilling.
 ///
-/// The display area has a solid black background — all dog PNGs have black
-/// backgrounds and must never be placed on a lighter surface.
+/// Pet PNG assets include transparency, so the display area should not force a
+/// solid background color.
 ///
 /// When vitality == 0 the rocking animation is stopped and dies.png is shown
 /// without any additional colour filters — the asset is already appropriate
@@ -73,10 +73,9 @@ class _PetRendererState extends ConsumerState<PetRenderer>
     final assetPath = PetStateMapper.mapVitalityToState(pet.vitality);
     final isDead = pet.visualState == PetStateEnum.dead;
 
-    final image = Container(
+    final image = SizedBox(
       width: 200,
       height: 200,
-      color: const Color(0xFF000000),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
         child: Image.asset(
@@ -106,10 +105,8 @@ class _PetRendererState extends ConsumerState<PetRenderer>
         scale: _bounceAnimation,
         child: AnimatedBuilder(
           animation: _rockAnimation,
-          builder: (_, child) => Transform.rotate(
-            angle: _rockAnimation.value,
-            child: child,
-          ),
+          builder: (_, child) =>
+              Transform.rotate(angle: _rockAnimation.value, child: child),
           child: image,
         ),
       ),

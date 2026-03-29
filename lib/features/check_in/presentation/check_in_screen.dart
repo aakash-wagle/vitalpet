@@ -35,8 +35,9 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen>
   @override
   void initState() {
     super.initState();
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _bounceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -92,8 +93,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen>
         children: [
           SafeArea(
             child: sessionAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => _ErrorBody(message: e.toString()),
               data: (session) => _buildSessionBody(session),
             ),
@@ -123,9 +123,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen>
       idle: (_) => _OverallStatusBody(bounceAnimation: _bounceAnimation),
       collectingScore: (_) =>
           _OverallStatusBody(bounceAnimation: _bounceAnimation),
-      selectingSymptoms: (s) => _SymptomCategorySelector(
-        overallStatus: s.overallStatus,
-      ),
+      selectingSymptoms: (s) =>
+          _SymptomCategorySelector(overallStatus: s.overallStatus),
       collectingSymptomDetails: (s) => _SymptomDetailBody(
         category: s.selectedCategories[s.currentCategoryIndex],
         step: s.categoryStep,
@@ -149,8 +148,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen>
               answers: s.answers,
             ),
       partial: (s) => _PartialSavedBody(savedAt: s.savedAt),
-      completing: (_) =>
-          const Center(child: CircularProgressIndicator()),
+      completing: (_) => const Center(child: CircularProgressIndicator()),
       completed: (s) => _CompletedBody(
         hadMilestone: s.hadMilestone,
         milestone: s.milestone,
@@ -170,8 +168,7 @@ class _OverallStatusBody extends ConsumerStatefulWidget {
   final Animation<double> bounceAnimation;
 
   @override
-  ConsumerState<_OverallStatusBody> createState() =>
-      _OverallStatusBodyState();
+  ConsumerState<_OverallStatusBody> createState() => _OverallStatusBodyState();
 }
 
 class _OverallStatusBodyState extends ConsumerState<_OverallStatusBody> {
@@ -181,25 +178,27 @@ class _OverallStatusBodyState extends ConsumerState<_OverallStatusBody> {
 
     final Widget petImage;
     if (petAsync.value != null) {
-      final assetPath =
-          PetStateMapper.mapVitalityToState(petAsync.value!.vitality);
-      petImage = Container(
+      final assetPath = PetStateMapper.mapVitalityToState(
+        petAsync.value!.vitality,
+      );
+      petImage = SizedBox(
         key: ValueKey(assetPath),
         width: 120,
         height: 120,
-        color: const Color(0xFF000000),
         child: Image.asset(
           assetPath,
           width: 120,
           height: 120,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              const SizedBox(width: 120, height: 120),
+          errorBuilder: (_, __, ___) => const SizedBox(width: 120, height: 120),
         ),
       );
     } else {
-      petImage =
-          const SizedBox(key: ValueKey('empty'), width: 120, height: 120);
+      petImage = const SizedBox(
+        key: ValueKey('empty'),
+        width: 120,
+        height: 120,
+      );
     }
 
     return Padding(
@@ -252,7 +251,8 @@ class _OverallStatusBodyState extends ConsumerState<_OverallStatusBody> {
             hint: 'Or tell us how you feel...',
             onSubmit: (text) {
               final lower = text.toLowerCase();
-              final isGreat = lower.contains('great') ||
+              final isGreat =
+                  lower.contains('great') ||
                   lower.contains('good') ||
                   lower.contains('fine') ||
                   lower.contains('amazing') ||
@@ -422,9 +422,8 @@ class _SymptomCategorySelectorState
                 child: SizedBox(
                   height: 48,
                   child: OutlinedButton(
-                    onPressed: () => ref
-                        .read(checkInSessionProvider.notifier)
-                        .savePartial(),
+                    onPressed: () =>
+                        ref.read(checkInSessionProvider.notifier).savePartial(),
                     child: const Text('Save and come back'),
                   ),
                 ),
@@ -437,8 +436,8 @@ class _SymptomCategorySelectorState
                     onPressed: _selected.isEmpty
                         ? null
                         : () => ref
-                            .read(checkInSessionProvider.notifier)
-                            .selectSymptomCategories(_selected.toList()),
+                              .read(checkInSessionProvider.notifier)
+                              .selectSymptomCategories(_selected.toList()),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                     ),
@@ -466,12 +465,12 @@ class _SymptomCategoryChip extends StatelessWidget {
   final VoidCallback onTap;
 
   IconData get _icon => switch (category) {
-        SymptomCategory.fever => Icons.thermostat,
-        SymptomCategory.pain => Icons.bolt,
-        SymptomCategory.fatigue => Icons.battery_2_bar,
-        SymptomCategory.nausea => Icons.sick,
-        SymptomCategory.other => Icons.more_horiz,
-      };
+    SymptomCategory.fever => Icons.thermostat,
+    SymptomCategory.pain => Icons.bolt,
+    SymptomCategory.fatigue => Icons.battery_2_bar,
+    SymptomCategory.nausea => Icons.sick,
+    SymptomCategory.other => Icons.more_horiz,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -500,8 +499,9 @@ class _SymptomCategoryChip extends StatelessWidget {
               children: [
                 Icon(
                   _icon,
-                  color:
-                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -511,8 +511,9 @@ class _SymptomCategoryChip extends StatelessWidget {
                       color: isSelected
                           ? AppColors.primary
                           : AppColors.textPrimary,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -547,8 +548,7 @@ class _SymptomDetailBody extends ConsumerStatefulWidget {
   final int totalCategories;
 
   @override
-  ConsumerState<_SymptomDetailBody> createState() =>
-      _SymptomDetailBodyState();
+  ConsumerState<_SymptomDetailBody> createState() => _SymptomDetailBodyState();
 }
 
 class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
@@ -578,11 +578,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildStepContent(),
-            ),
-          ),
+          Expanded(child: SingleChildScrollView(child: _buildStepContent())),
           _TextInputAlternative(
             hint: 'Or describe in your own words...',
             onSubmit: _handleTextInput,
@@ -605,38 +601,39 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
     // For text input, auto-fill with reasonable defaults and skip ahead
     switch (widget.category) {
       case SymptomCategory.fever:
-        ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
-              'pattern',
-              'intermittent',
-            );
+        ref
+            .read(checkInSessionProvider.notifier)
+            .submitSymptomDetail('pattern', 'intermittent');
         break;
       case SymptomCategory.pain:
-        ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
+        ref
+            .read(checkInSessionProvider.notifier)
+            .submitSymptomDetail(
               widget.step == 0
                   ? 'regions'
                   : widget.step == 1
-                      ? 'type'
-                      : 'pattern',
+                  ? 'type'
+                  : 'pattern',
               text,
             );
         break;
       case SymptomCategory.fatigue:
-        ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
-              widget.step == 0 ? 'scope' : 'pattern',
-              text,
-            );
+        ref
+            .read(checkInSessionProvider.notifier)
+            .submitSymptomDetail(widget.step == 0 ? 'scope' : 'pattern', text);
         break;
       case SymptomCategory.nausea:
-        ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
+        ref
+            .read(checkInSessionProvider.notifier)
+            .submitSymptomDetail(
               widget.step == 0 ? 'vomiting' : 'pattern',
               text,
             );
         break;
       case SymptomCategory.other:
-        ref.read(checkInSessionProvider.notifier).submitSymptomDetail(
-              'free_text',
-              text,
-            );
+        ref
+            .read(checkInSessionProvider.notifier)
+            .submitSymptomDetail('free_text', text);
         break;
     }
   }
@@ -697,7 +694,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
               'Right arm',
               'Left leg',
               'Right leg',
-              'Back'
+              'Back',
             ],
             onConfirmed: (regions) => ref
                 .read(checkInSessionProvider.notifier)
@@ -795,10 +792,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Tell us what\'s going on',
-          style: AppTextStyles.bodyLarge,
-        ),
+        const Text('Tell us what\'s going on', style: AppTextStyles.bodyLarge),
         const SizedBox(height: 16),
         TextField(
           controller: _textController,
@@ -808,9 +802,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
           decoration: InputDecoration(
             hintText: 'Describe your symptoms...',
             hintStyle: AppTextStyles.bodyMedium,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
@@ -893,8 +885,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
         Text(question, style: AppTextStyles.bodyLarge),
         const SizedBox(height: 16),
         ...options.map((opt) {
-          final display =
-              labels?[opt] ?? opt.replaceAll('_', ' ');
+          final display = labels?[opt] ?? opt.replaceAll('_', ' ');
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: SizedBox(
@@ -922,10 +913,7 @@ class _SymptomDetailBodyState extends ConsumerState<_SymptomDetailBody> {
 }
 
 class _MultiSelectChips extends StatefulWidget {
-  const _MultiSelectChips({
-    required this.options,
-    required this.onConfirmed,
-  });
+  const _MultiSelectChips({required this.options, required this.onConfirmed});
 
   final List<String> options;
   final ValueChanged<List<String>> onConfirmed;
@@ -957,11 +945,12 @@ class _MultiSelectChipsState extends State<_MultiSelectChips> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color:
-                      isSelected ? AppColors.primary : AppColors.surface,
+                  color: isSelected ? AppColors.primary : AppColors.surface,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: isSelected
@@ -988,10 +977,8 @@ class _MultiSelectChipsState extends State<_MultiSelectChips> {
             width: double.infinity,
             height: 48,
             child: FilledButton(
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.primary),
-              onPressed: () =>
-                  widget.onConfirmed(_selected.toList()),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              onPressed: () => widget.onConfirmed(_selected.toList()),
               child: const Text('Confirm'),
             ),
           ),
@@ -1006,10 +993,7 @@ class _MultiSelectChipsState extends State<_MultiSelectChips> {
 // ---------------------------------------------------------------------------
 
 class _TextInputAlternative extends StatefulWidget {
-  const _TextInputAlternative({
-    required this.hint,
-    required this.onSubmit,
-  });
+  const _TextInputAlternative({required this.hint, required this.onSubmit});
 
   final String hint;
   final ValueChanged<String> onSubmit;
@@ -1056,16 +1040,20 @@ class _TextInputAlternativeState extends State<_TextInputAlternative> {
               hintText: widget.hint,
               hintStyle: AppTextStyles.labelSmall,
               isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
                 borderSide: const BorderSide(color: AppColors.textTertiary),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
             style: AppTextStyles.bodyMedium,
@@ -1168,12 +1156,14 @@ class _CompanionBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final petAsync = ref.watch(petProvider);
     final petName = petAsync.value?.name ?? 'your pet';
-    final clampedIndex =
-        currentIndex.clamp(0, questions.isEmpty ? 0 : questions.length - 1);
+    final clampedIndex = currentIndex.clamp(
+      0,
+      questions.isEmpty ? 0 : questions.length - 1,
+    );
     final currentQuestion =
         questions.isNotEmpty && clampedIndex < questions.length
-            ? questions[clampedIndex]
-            : null;
+        ? questions[clampedIndex]
+        : null;
 
     return Column(
       children: [
@@ -1237,8 +1227,7 @@ class _UserAnswerBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.7,
         ),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: const BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.only(
@@ -1250,8 +1239,7 @@ class _UserAnswerBubble extends StatelessWidget {
         ),
         child: Text(
           _formatAnswer(answer),
-          style: AppTextStyles.bodyLarge
-              .copyWith(color: AppColors.surface),
+          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.surface),
         ),
       ),
     );
@@ -1283,9 +1271,11 @@ class _PartialSavedBody extends StatelessWidget {
           children: [
             const Icon(Icons.bookmark, size: 64, color: AppColors.primary),
             const SizedBox(height: 16),
-            const Text('Progress saved',
-                style: AppTextStyles.headlineSmall,
-                textAlign: TextAlign.center),
+            const Text(
+              'Progress saved',
+              style: AppTextStyles.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             const Text(
               'Come back before midnight to finish and keep your streak!',
@@ -1295,8 +1285,7 @@ class _PartialSavedBody extends StatelessWidget {
             const SizedBox(height: 32),
             FilledButton(
               onPressed: () => context.pop(),
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
               child: const Text('Back to home'),
             ),
           ],
@@ -1353,11 +1342,10 @@ class _CompletedBodyState extends ConsumerState<_CompletedBody> {
 
     final Widget petImage;
     if (_showCelebrating) {
-      petImage = Container(
+      petImage = SizedBox(
         key: const ValueKey('celebrating'),
         width: 140,
         height: 140,
-        color: const Color(0xFF000000),
         child: Image.asset(
           PetStateMapper.specialAsset(SpecialPetMoment.milestone),
           width: 140,
@@ -1367,23 +1355,24 @@ class _CompletedBodyState extends ConsumerState<_CompletedBody> {
       );
     } else if (pet != null) {
       final assetPath = PetStateMapper.mapVitalityToState(pet.vitality);
-      petImage = Container(
+      petImage = SizedBox(
         key: ValueKey(assetPath),
         width: 140,
         height: 140,
-        color: const Color(0xFF000000),
         child: Image.asset(
           assetPath,
           width: 140,
           height: 140,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              const SizedBox(width: 140, height: 140),
+          errorBuilder: (_, __, ___) => const SizedBox(width: 140, height: 140),
         ),
       );
     } else {
-      petImage =
-          const SizedBox(key: ValueKey('empty'), width: 140, height: 140);
+      petImage = const SizedBox(
+        key: ValueKey('empty'),
+        width: 140,
+        height: 140,
+      );
     }
 
     return Center(
@@ -1401,9 +1390,7 @@ class _CompletedBodyState extends ConsumerState<_CompletedBody> {
             ),
             const SizedBox(height: 24),
             Text(
-              widget.hadMilestone
-                  ? 'Milestone reached!'
-                  : 'Check-in complete!',
+              widget.hadMilestone ? 'Milestone reached!' : 'Check-in complete!',
               style: AppTextStyles.headlineMedium,
               textAlign: TextAlign.center,
             ),
@@ -1515,12 +1502,17 @@ class _AllAnsweredPrompt extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline,
-                size: 64, color: AppColors.success),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: AppColors.success,
+            ),
             const SizedBox(height: 16),
-            const Text('All questions answered!',
-                style: AppTextStyles.headlineSmall,
-                textAlign: TextAlign.center),
+            const Text(
+              'All questions answered!',
+              style: AppTextStyles.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -1528,7 +1520,8 @@ class _AllAnsweredPrompt extends StatelessWidget {
               child: FilledButton(
                 onPressed: onDone,
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary),
+                  backgroundColor: AppColors.primary,
+                ),
                 child: const Text("I'm done"),
               ),
             ),
@@ -1554,13 +1547,17 @@ class _ErrorBody extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
             const SizedBox(height: 16),
-            const Text('Something went wrong',
-                style: AppTextStyles.headlineSmall,
-                textAlign: TextAlign.center),
+            const Text(
+              'Something went wrong',
+              style: AppTextStyles.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text(message,
-                style: AppTextStyles.bodyMedium,
-                textAlign: TextAlign.center),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

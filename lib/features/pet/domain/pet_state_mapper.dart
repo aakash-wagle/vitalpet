@@ -16,8 +16,7 @@ PetStateEnum mapVitalityToState(int vitality) {
 
 /// Maps vitality values and special moments to dog PNG asset paths.
 ///
-/// All assets live in `assets/images/pets/` and have solid black backgrounds —
-/// always display them on a [Color(0xFF000000)] background.
+/// All assets live in `assets/images/pets/` and include alpha transparency.
 class PetStateMapper {
   const PetStateMapper._();
 

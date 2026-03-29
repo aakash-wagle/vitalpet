@@ -8,8 +8,6 @@ import 'package:vitalpet/features/onboarding/presentation/widgets/pet_name_input
 import 'package:vitalpet/presentation/theme/app_colors.dart';
 import 'package:vitalpet/presentation/theme/app_text_styles.dart';
 
-const _kPetImageBg = Color(0xFF000000);
-
 /// Full onboarding flow — 3-page PageView followed by a one-time
 /// vulnerability safeguard overlay.
 ///
@@ -76,7 +74,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
@@ -94,9 +93,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onGetStarted: () => _goToPage(1),
                 onSkip: _skipToPage3,
               ),
-              _MeetYourPetPage(
-                onNext: () => _goToPage(2),
-              ),
+              _MeetYourPetPage(onNext: () => _goToPage(2)),
               _NameYourPetPage(
                 onNameChanged: (name) => setState(() => _validatedName = name),
                 onConditionChanged: (focus) =>
@@ -209,10 +206,9 @@ class _MeetYourPetPage extends StatelessWidget {
         child: Column(
           children: [
             const Spacer(),
-            Container(
+            SizedBox(
               width: 240,
               height: 240,
-              decoration: const BoxDecoration(color: _kPetImageBg),
               child: Semantics(
                 label: 'Your bulldog companion, greeting',
                 child: Image.asset(
@@ -305,10 +301,9 @@ class _NameYourPetPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Container(
+              child: SizedBox(
                 width: 100,
                 height: 100,
-                decoration: const BoxDecoration(color: _kPetImageBg),
                 child: Semantics(
                   label: 'Your bulldog companion',
                   child: Image.asset(
@@ -438,8 +433,7 @@ class _ConditionTile extends StatelessWidget {
                     color: selected
                         ? AppColors.primaryLight
                         : AppColors.textSecondaryDark,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
