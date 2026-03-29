@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-HF_TOKEN="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"
+HF_TOKEN=""
 
 MODEL_REPO="litert-community/Gemma3-1B-IT"
 MODEL_FILE="gemma3-1b-it-int4.task"
