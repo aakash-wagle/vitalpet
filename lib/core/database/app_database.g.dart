@@ -59,17 +59,6 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _answersJsonMeta = const VerificationMeta(
-    'answersJson',
-  );
-  @override
-  late final GeneratedColumn<String> answersJson = GeneratedColumn<String>(
-    'answers_json',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _depthScoreMeta = const VerificationMeta(
     'depthScore',
   );
@@ -126,7 +115,6 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     localDate,
     wellnessScore,
     mode,
-    answersJson,
     depthScore,
     isPartial,
     amendedAt,
@@ -184,17 +172,6 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     } else if (isInserting) {
       context.missing(_modeMeta);
     }
-    if (data.containsKey('answers_json')) {
-      context.handle(
-        _answersJsonMeta,
-        answersJson.isAcceptableOrUnknown(
-          data['answers_json']!,
-          _answersJsonMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_answersJsonMeta);
-    }
     if (data.containsKey('depth_score')) {
       context.handle(
         _depthScoreMeta,
@@ -250,10 +227,6 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
         DriftSqlType.int,
         data['${effectivePrefix}mode'],
       )!,
-      answersJson: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}answers_json'],
-      )!,
       depthScore: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}depth_score'],
@@ -285,7 +258,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
   final String localDate;
   final int wellnessScore;
   final int mode;
-  final String answersJson;
   final double depthScore;
   final bool isPartial;
   final String? amendedAt;
@@ -296,7 +268,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     required this.localDate,
     required this.wellnessScore,
     required this.mode,
-    required this.answersJson,
     required this.depthScore,
     required this.isPartial,
     this.amendedAt,
@@ -310,7 +281,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     map['local_date'] = Variable<String>(localDate);
     map['wellness_score'] = Variable<int>(wellnessScore);
     map['mode'] = Variable<int>(mode);
-    map['answers_json'] = Variable<String>(answersJson);
     map['depth_score'] = Variable<double>(depthScore);
     map['is_partial'] = Variable<bool>(isPartial);
     if (!nullToAbsent || amendedAt != null) {
@@ -327,7 +297,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       localDate: Value(localDate),
       wellnessScore: Value(wellnessScore),
       mode: Value(mode),
-      answersJson: Value(answersJson),
       depthScore: Value(depthScore),
       isPartial: Value(isPartial),
       amendedAt: amendedAt == null && nullToAbsent
@@ -348,7 +317,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       localDate: serializer.fromJson<String>(json['localDate']),
       wellnessScore: serializer.fromJson<int>(json['wellnessScore']),
       mode: serializer.fromJson<int>(json['mode']),
-      answersJson: serializer.fromJson<String>(json['answersJson']),
       depthScore: serializer.fromJson<double>(json['depthScore']),
       isPartial: serializer.fromJson<bool>(json['isPartial']),
       amendedAt: serializer.fromJson<String?>(json['amendedAt']),
@@ -364,7 +332,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       'localDate': serializer.toJson<String>(localDate),
       'wellnessScore': serializer.toJson<int>(wellnessScore),
       'mode': serializer.toJson<int>(mode),
-      'answersJson': serializer.toJson<String>(answersJson),
       'depthScore': serializer.toJson<double>(depthScore),
       'isPartial': serializer.toJson<bool>(isPartial),
       'amendedAt': serializer.toJson<String?>(amendedAt),
@@ -378,7 +345,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     String? localDate,
     int? wellnessScore,
     int? mode,
-    String? answersJson,
     double? depthScore,
     bool? isPartial,
     Value<String?> amendedAt = const Value.absent(),
@@ -389,7 +355,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     localDate: localDate ?? this.localDate,
     wellnessScore: wellnessScore ?? this.wellnessScore,
     mode: mode ?? this.mode,
-    answersJson: answersJson ?? this.answersJson,
     depthScore: depthScore ?? this.depthScore,
     isPartial: isPartial ?? this.isPartial,
     amendedAt: amendedAt.present ? amendedAt.value : this.amendedAt,
@@ -404,9 +369,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           ? data.wellnessScore.value
           : this.wellnessScore,
       mode: data.mode.present ? data.mode.value : this.mode,
-      answersJson: data.answersJson.present
-          ? data.answersJson.value
-          : this.answersJson,
       depthScore: data.depthScore.present
           ? data.depthScore.value
           : this.depthScore,
@@ -424,7 +386,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           ..write('localDate: $localDate, ')
           ..write('wellnessScore: $wellnessScore, ')
           ..write('mode: $mode, ')
-          ..write('answersJson: $answersJson, ')
           ..write('depthScore: $depthScore, ')
           ..write('isPartial: $isPartial, ')
           ..write('amendedAt: $amendedAt, ')
@@ -440,7 +401,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     localDate,
     wellnessScore,
     mode,
-    answersJson,
     depthScore,
     isPartial,
     amendedAt,
@@ -455,7 +415,6 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           other.localDate == this.localDate &&
           other.wellnessScore == this.wellnessScore &&
           other.mode == this.mode &&
-          other.answersJson == this.answersJson &&
           other.depthScore == this.depthScore &&
           other.isPartial == this.isPartial &&
           other.amendedAt == this.amendedAt &&
@@ -468,7 +427,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   final Value<String> localDate;
   final Value<int> wellnessScore;
   final Value<int> mode;
-  final Value<String> answersJson;
   final Value<double> depthScore;
   final Value<bool> isPartial;
   final Value<String?> amendedAt;
@@ -480,7 +438,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     this.localDate = const Value.absent(),
     this.wellnessScore = const Value.absent(),
     this.mode = const Value.absent(),
-    this.answersJson = const Value.absent(),
     this.depthScore = const Value.absent(),
     this.isPartial = const Value.absent(),
     this.amendedAt = const Value.absent(),
@@ -493,7 +450,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     required String localDate,
     required int wellnessScore,
     required int mode,
-    required String answersJson,
     this.depthScore = const Value.absent(),
     this.isPartial = const Value.absent(),
     this.amendedAt = const Value.absent(),
@@ -504,7 +460,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
        localDate = Value(localDate),
        wellnessScore = Value(wellnessScore),
        mode = Value(mode),
-       answersJson = Value(answersJson),
        createdAt = Value(createdAt);
   static Insertable<CheckIn> custom({
     Expression<String>? id,
@@ -512,7 +467,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     Expression<String>? localDate,
     Expression<int>? wellnessScore,
     Expression<int>? mode,
-    Expression<String>? answersJson,
     Expression<double>? depthScore,
     Expression<bool>? isPartial,
     Expression<String>? amendedAt,
@@ -525,7 +479,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
       if (localDate != null) 'local_date': localDate,
       if (wellnessScore != null) 'wellness_score': wellnessScore,
       if (mode != null) 'mode': mode,
-      if (answersJson != null) 'answers_json': answersJson,
       if (depthScore != null) 'depth_score': depthScore,
       if (isPartial != null) 'is_partial': isPartial,
       if (amendedAt != null) 'amended_at': amendedAt,
@@ -540,7 +493,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     Value<String>? localDate,
     Value<int>? wellnessScore,
     Value<int>? mode,
-    Value<String>? answersJson,
     Value<double>? depthScore,
     Value<bool>? isPartial,
     Value<String?>? amendedAt,
@@ -553,7 +505,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
       localDate: localDate ?? this.localDate,
       wellnessScore: wellnessScore ?? this.wellnessScore,
       mode: mode ?? this.mode,
-      answersJson: answersJson ?? this.answersJson,
       depthScore: depthScore ?? this.depthScore,
       isPartial: isPartial ?? this.isPartial,
       amendedAt: amendedAt ?? this.amendedAt,
@@ -579,9 +530,6 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     }
     if (mode.present) {
       map['mode'] = Variable<int>(mode.value);
-    }
-    if (answersJson.present) {
-      map['answers_json'] = Variable<String>(answersJson.value);
     }
     if (depthScore.present) {
       map['depth_score'] = Variable<double>(depthScore.value);
@@ -609,11 +557,2396 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
           ..write('localDate: $localDate, ')
           ..write('wellnessScore: $wellnessScore, ')
           ..write('mode: $mode, ')
-          ..write('answersJson: $answersJson, ')
           ..write('depthScore: $depthScore, ')
           ..write('isPartial: $isPartial, ')
           ..write('amendedAt: $amendedAt, ')
           ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CheckInSymptomsTable extends CheckInSymptoms
+    with TableInfo<$CheckInSymptomsTable, CheckInSymptom> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CheckInSymptomsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _checkInIdMeta = const VerificationMeta(
+    'checkInId',
+  );
+  @override
+  late final GeneratedColumn<String> checkInId = GeneratedColumn<String>(
+    'check_in_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_ins (id)',
+    ),
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _onsetDayMeta = const VerificationMeta(
+    'onsetDay',
+  );
+  @override
+  late final GeneratedColumn<int> onsetDay = GeneratedColumn<int>(
+    'onset_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _patternMeta = const VerificationMeta(
+    'pattern',
+  );
+  @override
+  late final GeneratedColumn<String> pattern = GeneratedColumn<String>(
+    'pattern',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    checkInId,
+    category,
+    onsetDay,
+    pattern,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'check_in_symptoms';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CheckInSymptom> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('check_in_id')) {
+      context.handle(
+        _checkInIdMeta,
+        checkInId.isAcceptableOrUnknown(data['check_in_id']!, _checkInIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_checkInIdMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('onset_day')) {
+      context.handle(
+        _onsetDayMeta,
+        onsetDay.isAcceptableOrUnknown(data['onset_day']!, _onsetDayMeta),
+      );
+    }
+    if (data.containsKey('pattern')) {
+      context.handle(
+        _patternMeta,
+        pattern.isAcceptableOrUnknown(data['pattern']!, _patternMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CheckInSymptom map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CheckInSymptom(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      checkInId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}check_in_id'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      onsetDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}onset_day'],
+      ),
+      pattern: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pattern'],
+      ),
+    );
+  }
+
+  @override
+  $CheckInSymptomsTable createAlias(String alias) {
+    return $CheckInSymptomsTable(attachedDatabase, alias);
+  }
+}
+
+class CheckInSymptom extends DataClass implements Insertable<CheckInSymptom> {
+  final String id;
+  final String checkInId;
+  final String category;
+  final int? onsetDay;
+  final String? pattern;
+  const CheckInSymptom({
+    required this.id,
+    required this.checkInId,
+    required this.category,
+    this.onsetDay,
+    this.pattern,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['check_in_id'] = Variable<String>(checkInId);
+    map['category'] = Variable<String>(category);
+    if (!nullToAbsent || onsetDay != null) {
+      map['onset_day'] = Variable<int>(onsetDay);
+    }
+    if (!nullToAbsent || pattern != null) {
+      map['pattern'] = Variable<String>(pattern);
+    }
+    return map;
+  }
+
+  CheckInSymptomsCompanion toCompanion(bool nullToAbsent) {
+    return CheckInSymptomsCompanion(
+      id: Value(id),
+      checkInId: Value(checkInId),
+      category: Value(category),
+      onsetDay: onsetDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(onsetDay),
+      pattern: pattern == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pattern),
+    );
+  }
+
+  factory CheckInSymptom.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CheckInSymptom(
+      id: serializer.fromJson<String>(json['id']),
+      checkInId: serializer.fromJson<String>(json['checkInId']),
+      category: serializer.fromJson<String>(json['category']),
+      onsetDay: serializer.fromJson<int?>(json['onsetDay']),
+      pattern: serializer.fromJson<String?>(json['pattern']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'checkInId': serializer.toJson<String>(checkInId),
+      'category': serializer.toJson<String>(category),
+      'onsetDay': serializer.toJson<int?>(onsetDay),
+      'pattern': serializer.toJson<String?>(pattern),
+    };
+  }
+
+  CheckInSymptom copyWith({
+    String? id,
+    String? checkInId,
+    String? category,
+    Value<int?> onsetDay = const Value.absent(),
+    Value<String?> pattern = const Value.absent(),
+  }) => CheckInSymptom(
+    id: id ?? this.id,
+    checkInId: checkInId ?? this.checkInId,
+    category: category ?? this.category,
+    onsetDay: onsetDay.present ? onsetDay.value : this.onsetDay,
+    pattern: pattern.present ? pattern.value : this.pattern,
+  );
+  CheckInSymptom copyWithCompanion(CheckInSymptomsCompanion data) {
+    return CheckInSymptom(
+      id: data.id.present ? data.id.value : this.id,
+      checkInId: data.checkInId.present ? data.checkInId.value : this.checkInId,
+      category: data.category.present ? data.category.value : this.category,
+      onsetDay: data.onsetDay.present ? data.onsetDay.value : this.onsetDay,
+      pattern: data.pattern.present ? data.pattern.value : this.pattern,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CheckInSymptom(')
+          ..write('id: $id, ')
+          ..write('checkInId: $checkInId, ')
+          ..write('category: $category, ')
+          ..write('onsetDay: $onsetDay, ')
+          ..write('pattern: $pattern')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, checkInId, category, onsetDay, pattern);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CheckInSymptom &&
+          other.id == this.id &&
+          other.checkInId == this.checkInId &&
+          other.category == this.category &&
+          other.onsetDay == this.onsetDay &&
+          other.pattern == this.pattern);
+}
+
+class CheckInSymptomsCompanion extends UpdateCompanion<CheckInSymptom> {
+  final Value<String> id;
+  final Value<String> checkInId;
+  final Value<String> category;
+  final Value<int?> onsetDay;
+  final Value<String?> pattern;
+  final Value<int> rowid;
+  const CheckInSymptomsCompanion({
+    this.id = const Value.absent(),
+    this.checkInId = const Value.absent(),
+    this.category = const Value.absent(),
+    this.onsetDay = const Value.absent(),
+    this.pattern = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CheckInSymptomsCompanion.insert({
+    required String id,
+    required String checkInId,
+    required String category,
+    this.onsetDay = const Value.absent(),
+    this.pattern = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       checkInId = Value(checkInId),
+       category = Value(category);
+  static Insertable<CheckInSymptom> custom({
+    Expression<String>? id,
+    Expression<String>? checkInId,
+    Expression<String>? category,
+    Expression<int>? onsetDay,
+    Expression<String>? pattern,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (checkInId != null) 'check_in_id': checkInId,
+      if (category != null) 'category': category,
+      if (onsetDay != null) 'onset_day': onsetDay,
+      if (pattern != null) 'pattern': pattern,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CheckInSymptomsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? checkInId,
+    Value<String>? category,
+    Value<int?>? onsetDay,
+    Value<String?>? pattern,
+    Value<int>? rowid,
+  }) {
+    return CheckInSymptomsCompanion(
+      id: id ?? this.id,
+      checkInId: checkInId ?? this.checkInId,
+      category: category ?? this.category,
+      onsetDay: onsetDay ?? this.onsetDay,
+      pattern: pattern ?? this.pattern,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (checkInId.present) {
+      map['check_in_id'] = Variable<String>(checkInId.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (onsetDay.present) {
+      map['onset_day'] = Variable<int>(onsetDay.value);
+    }
+    if (pattern.present) {
+      map['pattern'] = Variable<String>(pattern.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CheckInSymptomsCompanion(')
+          ..write('id: $id, ')
+          ..write('checkInId: $checkInId, ')
+          ..write('category: $category, ')
+          ..write('onsetDay: $onsetDay, ')
+          ..write('pattern: $pattern, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SymptomFeverTable extends SymptomFever
+    with TableInfo<$SymptomFeverTable, SymptomFeverData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SymptomFeverTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symptomIdMeta = const VerificationMeta(
+    'symptomId',
+  );
+  @override
+  late final GeneratedColumn<String> symptomId = GeneratedColumn<String>(
+    'symptom_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_in_symptoms (id)',
+    ),
+  );
+  static const VerificationMeta _temperatureMeta = const VerificationMeta(
+    'temperature',
+  );
+  @override
+  late final GeneratedColumn<double> temperature = GeneratedColumn<double>(
+    'temperature',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _skippedMeta = const VerificationMeta(
+    'skipped',
+  );
+  @override
+  late final GeneratedColumn<bool> skipped = GeneratedColumn<bool>(
+    'skipped',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("skipped" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symptomId,
+    temperature,
+    unit,
+    method,
+    skipped,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'symptom_fever';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SymptomFeverData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symptom_id')) {
+      context.handle(
+        _symptomIdMeta,
+        symptomId.isAcceptableOrUnknown(data['symptom_id']!, _symptomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symptomIdMeta);
+    }
+    if (data.containsKey('temperature')) {
+      context.handle(
+        _temperatureMeta,
+        temperature.isAcceptableOrUnknown(
+          data['temperature']!,
+          _temperatureMeta,
+        ),
+      );
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
+    if (data.containsKey('skipped')) {
+      context.handle(
+        _skippedMeta,
+        skipped.isAcceptableOrUnknown(data['skipped']!, _skippedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symptomId};
+  @override
+  SymptomFeverData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SymptomFeverData(
+      symptomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptom_id'],
+      )!,
+      temperature: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}temperature'],
+      ),
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      ),
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      ),
+      skipped: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}skipped'],
+      )!,
+    );
+  }
+
+  @override
+  $SymptomFeverTable createAlias(String alias) {
+    return $SymptomFeverTable(attachedDatabase, alias);
+  }
+}
+
+class SymptomFeverData extends DataClass
+    implements Insertable<SymptomFeverData> {
+  final String symptomId;
+  final double? temperature;
+  final String? unit;
+  final String? method;
+  final bool skipped;
+  const SymptomFeverData({
+    required this.symptomId,
+    this.temperature,
+    this.unit,
+    this.method,
+    required this.skipped,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symptom_id'] = Variable<String>(symptomId);
+    if (!nullToAbsent || temperature != null) {
+      map['temperature'] = Variable<double>(temperature);
+    }
+    if (!nullToAbsent || unit != null) {
+      map['unit'] = Variable<String>(unit);
+    }
+    if (!nullToAbsent || method != null) {
+      map['method'] = Variable<String>(method);
+    }
+    map['skipped'] = Variable<bool>(skipped);
+    return map;
+  }
+
+  SymptomFeverCompanion toCompanion(bool nullToAbsent) {
+    return SymptomFeverCompanion(
+      symptomId: Value(symptomId),
+      temperature: temperature == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperature),
+      unit: unit == null && nullToAbsent ? const Value.absent() : Value(unit),
+      method: method == null && nullToAbsent
+          ? const Value.absent()
+          : Value(method),
+      skipped: Value(skipped),
+    );
+  }
+
+  factory SymptomFeverData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SymptomFeverData(
+      symptomId: serializer.fromJson<String>(json['symptomId']),
+      temperature: serializer.fromJson<double?>(json['temperature']),
+      unit: serializer.fromJson<String?>(json['unit']),
+      method: serializer.fromJson<String?>(json['method']),
+      skipped: serializer.fromJson<bool>(json['skipped']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symptomId': serializer.toJson<String>(symptomId),
+      'temperature': serializer.toJson<double?>(temperature),
+      'unit': serializer.toJson<String?>(unit),
+      'method': serializer.toJson<String?>(method),
+      'skipped': serializer.toJson<bool>(skipped),
+    };
+  }
+
+  SymptomFeverData copyWith({
+    String? symptomId,
+    Value<double?> temperature = const Value.absent(),
+    Value<String?> unit = const Value.absent(),
+    Value<String?> method = const Value.absent(),
+    bool? skipped,
+  }) => SymptomFeverData(
+    symptomId: symptomId ?? this.symptomId,
+    temperature: temperature.present ? temperature.value : this.temperature,
+    unit: unit.present ? unit.value : this.unit,
+    method: method.present ? method.value : this.method,
+    skipped: skipped ?? this.skipped,
+  );
+  SymptomFeverData copyWithCompanion(SymptomFeverCompanion data) {
+    return SymptomFeverData(
+      symptomId: data.symptomId.present ? data.symptomId.value : this.symptomId,
+      temperature: data.temperature.present
+          ? data.temperature.value
+          : this.temperature,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      method: data.method.present ? data.method.value : this.method,
+      skipped: data.skipped.present ? data.skipped.value : this.skipped,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomFeverData(')
+          ..write('symptomId: $symptomId, ')
+          ..write('temperature: $temperature, ')
+          ..write('unit: $unit, ')
+          ..write('method: $method, ')
+          ..write('skipped: $skipped')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(symptomId, temperature, unit, method, skipped);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SymptomFeverData &&
+          other.symptomId == this.symptomId &&
+          other.temperature == this.temperature &&
+          other.unit == this.unit &&
+          other.method == this.method &&
+          other.skipped == this.skipped);
+}
+
+class SymptomFeverCompanion extends UpdateCompanion<SymptomFeverData> {
+  final Value<String> symptomId;
+  final Value<double?> temperature;
+  final Value<String?> unit;
+  final Value<String?> method;
+  final Value<bool> skipped;
+  final Value<int> rowid;
+  const SymptomFeverCompanion({
+    this.symptomId = const Value.absent(),
+    this.temperature = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.method = const Value.absent(),
+    this.skipped = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SymptomFeverCompanion.insert({
+    required String symptomId,
+    this.temperature = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.method = const Value.absent(),
+    this.skipped = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symptomId = Value(symptomId);
+  static Insertable<SymptomFeverData> custom({
+    Expression<String>? symptomId,
+    Expression<double>? temperature,
+    Expression<String>? unit,
+    Expression<String>? method,
+    Expression<bool>? skipped,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symptomId != null) 'symptom_id': symptomId,
+      if (temperature != null) 'temperature': temperature,
+      if (unit != null) 'unit': unit,
+      if (method != null) 'method': method,
+      if (skipped != null) 'skipped': skipped,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SymptomFeverCompanion copyWith({
+    Value<String>? symptomId,
+    Value<double?>? temperature,
+    Value<String?>? unit,
+    Value<String?>? method,
+    Value<bool>? skipped,
+    Value<int>? rowid,
+  }) {
+    return SymptomFeverCompanion(
+      symptomId: symptomId ?? this.symptomId,
+      temperature: temperature ?? this.temperature,
+      unit: unit ?? this.unit,
+      method: method ?? this.method,
+      skipped: skipped ?? this.skipped,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symptomId.present) {
+      map['symptom_id'] = Variable<String>(symptomId.value);
+    }
+    if (temperature.present) {
+      map['temperature'] = Variable<double>(temperature.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (skipped.present) {
+      map['skipped'] = Variable<bool>(skipped.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomFeverCompanion(')
+          ..write('symptomId: $symptomId, ')
+          ..write('temperature: $temperature, ')
+          ..write('unit: $unit, ')
+          ..write('method: $method, ')
+          ..write('skipped: $skipped, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SymptomPainTable extends SymptomPain
+    with TableInfo<$SymptomPainTable, SymptomPainData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SymptomPainTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symptomIdMeta = const VerificationMeta(
+    'symptomId',
+  );
+  @override
+  late final GeneratedColumn<String> symptomId = GeneratedColumn<String>(
+    'symptom_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_in_symptoms (id)',
+    ),
+  );
+  static const VerificationMeta _regionsJsonMeta = const VerificationMeta(
+    'regionsJson',
+  );
+  @override
+  late final GeneratedColumn<String> regionsJson = GeneratedColumn<String>(
+    'regions_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _triggersJsonMeta = const VerificationMeta(
+    'triggersJson',
+  );
+  @override
+  late final GeneratedColumn<String> triggersJson = GeneratedColumn<String>(
+    'triggers_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symptomId,
+    regionsJson,
+    type,
+    triggersJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'symptom_pain';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SymptomPainData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symptom_id')) {
+      context.handle(
+        _symptomIdMeta,
+        symptomId.isAcceptableOrUnknown(data['symptom_id']!, _symptomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symptomIdMeta);
+    }
+    if (data.containsKey('regions_json')) {
+      context.handle(
+        _regionsJsonMeta,
+        regionsJson.isAcceptableOrUnknown(
+          data['regions_json']!,
+          _regionsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_regionsJsonMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('triggers_json')) {
+      context.handle(
+        _triggersJsonMeta,
+        triggersJson.isAcceptableOrUnknown(
+          data['triggers_json']!,
+          _triggersJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symptomId};
+  @override
+  SymptomPainData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SymptomPainData(
+      symptomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptom_id'],
+      )!,
+      regionsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}regions_json'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      triggersJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}triggers_json'],
+      ),
+    );
+  }
+
+  @override
+  $SymptomPainTable createAlias(String alias) {
+    return $SymptomPainTable(attachedDatabase, alias);
+  }
+}
+
+class SymptomPainData extends DataClass implements Insertable<SymptomPainData> {
+  final String symptomId;
+  final String regionsJson;
+  final String type;
+  final String? triggersJson;
+  const SymptomPainData({
+    required this.symptomId,
+    required this.regionsJson,
+    required this.type,
+    this.triggersJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symptom_id'] = Variable<String>(symptomId);
+    map['regions_json'] = Variable<String>(regionsJson);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || triggersJson != null) {
+      map['triggers_json'] = Variable<String>(triggersJson);
+    }
+    return map;
+  }
+
+  SymptomPainCompanion toCompanion(bool nullToAbsent) {
+    return SymptomPainCompanion(
+      symptomId: Value(symptomId),
+      regionsJson: Value(regionsJson),
+      type: Value(type),
+      triggersJson: triggersJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(triggersJson),
+    );
+  }
+
+  factory SymptomPainData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SymptomPainData(
+      symptomId: serializer.fromJson<String>(json['symptomId']),
+      regionsJson: serializer.fromJson<String>(json['regionsJson']),
+      type: serializer.fromJson<String>(json['type']),
+      triggersJson: serializer.fromJson<String?>(json['triggersJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symptomId': serializer.toJson<String>(symptomId),
+      'regionsJson': serializer.toJson<String>(regionsJson),
+      'type': serializer.toJson<String>(type),
+      'triggersJson': serializer.toJson<String?>(triggersJson),
+    };
+  }
+
+  SymptomPainData copyWith({
+    String? symptomId,
+    String? regionsJson,
+    String? type,
+    Value<String?> triggersJson = const Value.absent(),
+  }) => SymptomPainData(
+    symptomId: symptomId ?? this.symptomId,
+    regionsJson: regionsJson ?? this.regionsJson,
+    type: type ?? this.type,
+    triggersJson: triggersJson.present ? triggersJson.value : this.triggersJson,
+  );
+  SymptomPainData copyWithCompanion(SymptomPainCompanion data) {
+    return SymptomPainData(
+      symptomId: data.symptomId.present ? data.symptomId.value : this.symptomId,
+      regionsJson: data.regionsJson.present
+          ? data.regionsJson.value
+          : this.regionsJson,
+      type: data.type.present ? data.type.value : this.type,
+      triggersJson: data.triggersJson.present
+          ? data.triggersJson.value
+          : this.triggersJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomPainData(')
+          ..write('symptomId: $symptomId, ')
+          ..write('regionsJson: $regionsJson, ')
+          ..write('type: $type, ')
+          ..write('triggersJson: $triggersJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symptomId, regionsJson, type, triggersJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SymptomPainData &&
+          other.symptomId == this.symptomId &&
+          other.regionsJson == this.regionsJson &&
+          other.type == this.type &&
+          other.triggersJson == this.triggersJson);
+}
+
+class SymptomPainCompanion extends UpdateCompanion<SymptomPainData> {
+  final Value<String> symptomId;
+  final Value<String> regionsJson;
+  final Value<String> type;
+  final Value<String?> triggersJson;
+  final Value<int> rowid;
+  const SymptomPainCompanion({
+    this.symptomId = const Value.absent(),
+    this.regionsJson = const Value.absent(),
+    this.type = const Value.absent(),
+    this.triggersJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SymptomPainCompanion.insert({
+    required String symptomId,
+    required String regionsJson,
+    required String type,
+    this.triggersJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symptomId = Value(symptomId),
+       regionsJson = Value(regionsJson),
+       type = Value(type);
+  static Insertable<SymptomPainData> custom({
+    Expression<String>? symptomId,
+    Expression<String>? regionsJson,
+    Expression<String>? type,
+    Expression<String>? triggersJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symptomId != null) 'symptom_id': symptomId,
+      if (regionsJson != null) 'regions_json': regionsJson,
+      if (type != null) 'type': type,
+      if (triggersJson != null) 'triggers_json': triggersJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SymptomPainCompanion copyWith({
+    Value<String>? symptomId,
+    Value<String>? regionsJson,
+    Value<String>? type,
+    Value<String?>? triggersJson,
+    Value<int>? rowid,
+  }) {
+    return SymptomPainCompanion(
+      symptomId: symptomId ?? this.symptomId,
+      regionsJson: regionsJson ?? this.regionsJson,
+      type: type ?? this.type,
+      triggersJson: triggersJson ?? this.triggersJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symptomId.present) {
+      map['symptom_id'] = Variable<String>(symptomId.value);
+    }
+    if (regionsJson.present) {
+      map['regions_json'] = Variable<String>(regionsJson.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (triggersJson.present) {
+      map['triggers_json'] = Variable<String>(triggersJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomPainCompanion(')
+          ..write('symptomId: $symptomId, ')
+          ..write('regionsJson: $regionsJson, ')
+          ..write('type: $type, ')
+          ..write('triggersJson: $triggersJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SymptomFatigueTable extends SymptomFatigue
+    with TableInfo<$SymptomFatigueTable, SymptomFatigueData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SymptomFatigueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symptomIdMeta = const VerificationMeta(
+    'symptomId',
+  );
+  @override
+  late final GeneratedColumn<String> symptomId = GeneratedColumn<String>(
+    'symptom_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_in_symptoms (id)',
+    ),
+  );
+  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
+  @override
+  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
+    'scope',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _blocksDailyMeta = const VerificationMeta(
+    'blocksDaily',
+  );
+  @override
+  late final GeneratedColumn<bool> blocksDaily = GeneratedColumn<bool>(
+    'blocks_daily',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("blocks_daily" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [symptomId, scope, blocksDaily];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'symptom_fatigue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SymptomFatigueData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symptom_id')) {
+      context.handle(
+        _symptomIdMeta,
+        symptomId.isAcceptableOrUnknown(data['symptom_id']!, _symptomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symptomIdMeta);
+    }
+    if (data.containsKey('scope')) {
+      context.handle(
+        _scopeMeta,
+        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeMeta);
+    }
+    if (data.containsKey('blocks_daily')) {
+      context.handle(
+        _blocksDailyMeta,
+        blocksDaily.isAcceptableOrUnknown(
+          data['blocks_daily']!,
+          _blocksDailyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_blocksDailyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symptomId};
+  @override
+  SymptomFatigueData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SymptomFatigueData(
+      symptomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptom_id'],
+      )!,
+      scope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope'],
+      )!,
+      blocksDaily: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}blocks_daily'],
+      )!,
+    );
+  }
+
+  @override
+  $SymptomFatigueTable createAlias(String alias) {
+    return $SymptomFatigueTable(attachedDatabase, alias);
+  }
+}
+
+class SymptomFatigueData extends DataClass
+    implements Insertable<SymptomFatigueData> {
+  final String symptomId;
+  final String scope;
+  final bool blocksDaily;
+  const SymptomFatigueData({
+    required this.symptomId,
+    required this.scope,
+    required this.blocksDaily,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symptom_id'] = Variable<String>(symptomId);
+    map['scope'] = Variable<String>(scope);
+    map['blocks_daily'] = Variable<bool>(blocksDaily);
+    return map;
+  }
+
+  SymptomFatigueCompanion toCompanion(bool nullToAbsent) {
+    return SymptomFatigueCompanion(
+      symptomId: Value(symptomId),
+      scope: Value(scope),
+      blocksDaily: Value(blocksDaily),
+    );
+  }
+
+  factory SymptomFatigueData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SymptomFatigueData(
+      symptomId: serializer.fromJson<String>(json['symptomId']),
+      scope: serializer.fromJson<String>(json['scope']),
+      blocksDaily: serializer.fromJson<bool>(json['blocksDaily']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symptomId': serializer.toJson<String>(symptomId),
+      'scope': serializer.toJson<String>(scope),
+      'blocksDaily': serializer.toJson<bool>(blocksDaily),
+    };
+  }
+
+  SymptomFatigueData copyWith({
+    String? symptomId,
+    String? scope,
+    bool? blocksDaily,
+  }) => SymptomFatigueData(
+    symptomId: symptomId ?? this.symptomId,
+    scope: scope ?? this.scope,
+    blocksDaily: blocksDaily ?? this.blocksDaily,
+  );
+  SymptomFatigueData copyWithCompanion(SymptomFatigueCompanion data) {
+    return SymptomFatigueData(
+      symptomId: data.symptomId.present ? data.symptomId.value : this.symptomId,
+      scope: data.scope.present ? data.scope.value : this.scope,
+      blocksDaily: data.blocksDaily.present
+          ? data.blocksDaily.value
+          : this.blocksDaily,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomFatigueData(')
+          ..write('symptomId: $symptomId, ')
+          ..write('scope: $scope, ')
+          ..write('blocksDaily: $blocksDaily')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symptomId, scope, blocksDaily);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SymptomFatigueData &&
+          other.symptomId == this.symptomId &&
+          other.scope == this.scope &&
+          other.blocksDaily == this.blocksDaily);
+}
+
+class SymptomFatigueCompanion extends UpdateCompanion<SymptomFatigueData> {
+  final Value<String> symptomId;
+  final Value<String> scope;
+  final Value<bool> blocksDaily;
+  final Value<int> rowid;
+  const SymptomFatigueCompanion({
+    this.symptomId = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.blocksDaily = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SymptomFatigueCompanion.insert({
+    required String symptomId,
+    required String scope,
+    required bool blocksDaily,
+    this.rowid = const Value.absent(),
+  }) : symptomId = Value(symptomId),
+       scope = Value(scope),
+       blocksDaily = Value(blocksDaily);
+  static Insertable<SymptomFatigueData> custom({
+    Expression<String>? symptomId,
+    Expression<String>? scope,
+    Expression<bool>? blocksDaily,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symptomId != null) 'symptom_id': symptomId,
+      if (scope != null) 'scope': scope,
+      if (blocksDaily != null) 'blocks_daily': blocksDaily,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SymptomFatigueCompanion copyWith({
+    Value<String>? symptomId,
+    Value<String>? scope,
+    Value<bool>? blocksDaily,
+    Value<int>? rowid,
+  }) {
+    return SymptomFatigueCompanion(
+      symptomId: symptomId ?? this.symptomId,
+      scope: scope ?? this.scope,
+      blocksDaily: blocksDaily ?? this.blocksDaily,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symptomId.present) {
+      map['symptom_id'] = Variable<String>(symptomId.value);
+    }
+    if (scope.present) {
+      map['scope'] = Variable<String>(scope.value);
+    }
+    if (blocksDaily.present) {
+      map['blocks_daily'] = Variable<bool>(blocksDaily.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomFatigueCompanion(')
+          ..write('symptomId: $symptomId, ')
+          ..write('scope: $scope, ')
+          ..write('blocksDaily: $blocksDaily, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SymptomNauseaTable extends SymptomNausea
+    with TableInfo<$SymptomNauseaTable, SymptomNauseaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SymptomNauseaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symptomIdMeta = const VerificationMeta(
+    'symptomId',
+  );
+  @override
+  late final GeneratedColumn<String> symptomId = GeneratedColumn<String>(
+    'symptom_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_in_symptoms (id)',
+    ),
+  );
+  static const VerificationMeta _vomitingMeta = const VerificationMeta(
+    'vomiting',
+  );
+  @override
+  late final GeneratedColumn<bool> vomiting = GeneratedColumn<bool>(
+    'vomiting',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("vomiting" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _vomitFreqMeta = const VerificationMeta(
+    'vomitFreq',
+  );
+  @override
+  late final GeneratedColumn<String> vomitFreq = GeneratedColumn<String>(
+    'vomit_freq',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _appetiteMeta = const VerificationMeta(
+    'appetite',
+  );
+  @override
+  late final GeneratedColumn<String> appetite = GeneratedColumn<String>(
+    'appetite',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dehydrationSignsJsonMeta =
+      const VerificationMeta('dehydrationSignsJson');
+  @override
+  late final GeneratedColumn<String> dehydrationSignsJson =
+      GeneratedColumn<String>(
+        'dehydration_signs_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symptomId,
+    vomiting,
+    vomitFreq,
+    appetite,
+    dehydrationSignsJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'symptom_nausea';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SymptomNauseaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symptom_id')) {
+      context.handle(
+        _symptomIdMeta,
+        symptomId.isAcceptableOrUnknown(data['symptom_id']!, _symptomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symptomIdMeta);
+    }
+    if (data.containsKey('vomiting')) {
+      context.handle(
+        _vomitingMeta,
+        vomiting.isAcceptableOrUnknown(data['vomiting']!, _vomitingMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vomitingMeta);
+    }
+    if (data.containsKey('vomit_freq')) {
+      context.handle(
+        _vomitFreqMeta,
+        vomitFreq.isAcceptableOrUnknown(data['vomit_freq']!, _vomitFreqMeta),
+      );
+    }
+    if (data.containsKey('appetite')) {
+      context.handle(
+        _appetiteMeta,
+        appetite.isAcceptableOrUnknown(data['appetite']!, _appetiteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_appetiteMeta);
+    }
+    if (data.containsKey('dehydration_signs_json')) {
+      context.handle(
+        _dehydrationSignsJsonMeta,
+        dehydrationSignsJson.isAcceptableOrUnknown(
+          data['dehydration_signs_json']!,
+          _dehydrationSignsJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symptomId};
+  @override
+  SymptomNauseaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SymptomNauseaData(
+      symptomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptom_id'],
+      )!,
+      vomiting: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}vomiting'],
+      )!,
+      vomitFreq: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vomit_freq'],
+      ),
+      appetite: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}appetite'],
+      )!,
+      dehydrationSignsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dehydration_signs_json'],
+      ),
+    );
+  }
+
+  @override
+  $SymptomNauseaTable createAlias(String alias) {
+    return $SymptomNauseaTable(attachedDatabase, alias);
+  }
+}
+
+class SymptomNauseaData extends DataClass
+    implements Insertable<SymptomNauseaData> {
+  final String symptomId;
+  final bool vomiting;
+  final String? vomitFreq;
+  final String appetite;
+  final String? dehydrationSignsJson;
+  const SymptomNauseaData({
+    required this.symptomId,
+    required this.vomiting,
+    this.vomitFreq,
+    required this.appetite,
+    this.dehydrationSignsJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symptom_id'] = Variable<String>(symptomId);
+    map['vomiting'] = Variable<bool>(vomiting);
+    if (!nullToAbsent || vomitFreq != null) {
+      map['vomit_freq'] = Variable<String>(vomitFreq);
+    }
+    map['appetite'] = Variable<String>(appetite);
+    if (!nullToAbsent || dehydrationSignsJson != null) {
+      map['dehydration_signs_json'] = Variable<String>(dehydrationSignsJson);
+    }
+    return map;
+  }
+
+  SymptomNauseaCompanion toCompanion(bool nullToAbsent) {
+    return SymptomNauseaCompanion(
+      symptomId: Value(symptomId),
+      vomiting: Value(vomiting),
+      vomitFreq: vomitFreq == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vomitFreq),
+      appetite: Value(appetite),
+      dehydrationSignsJson: dehydrationSignsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dehydrationSignsJson),
+    );
+  }
+
+  factory SymptomNauseaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SymptomNauseaData(
+      symptomId: serializer.fromJson<String>(json['symptomId']),
+      vomiting: serializer.fromJson<bool>(json['vomiting']),
+      vomitFreq: serializer.fromJson<String?>(json['vomitFreq']),
+      appetite: serializer.fromJson<String>(json['appetite']),
+      dehydrationSignsJson: serializer.fromJson<String?>(
+        json['dehydrationSignsJson'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symptomId': serializer.toJson<String>(symptomId),
+      'vomiting': serializer.toJson<bool>(vomiting),
+      'vomitFreq': serializer.toJson<String?>(vomitFreq),
+      'appetite': serializer.toJson<String>(appetite),
+      'dehydrationSignsJson': serializer.toJson<String?>(dehydrationSignsJson),
+    };
+  }
+
+  SymptomNauseaData copyWith({
+    String? symptomId,
+    bool? vomiting,
+    Value<String?> vomitFreq = const Value.absent(),
+    String? appetite,
+    Value<String?> dehydrationSignsJson = const Value.absent(),
+  }) => SymptomNauseaData(
+    symptomId: symptomId ?? this.symptomId,
+    vomiting: vomiting ?? this.vomiting,
+    vomitFreq: vomitFreq.present ? vomitFreq.value : this.vomitFreq,
+    appetite: appetite ?? this.appetite,
+    dehydrationSignsJson: dehydrationSignsJson.present
+        ? dehydrationSignsJson.value
+        : this.dehydrationSignsJson,
+  );
+  SymptomNauseaData copyWithCompanion(SymptomNauseaCompanion data) {
+    return SymptomNauseaData(
+      symptomId: data.symptomId.present ? data.symptomId.value : this.symptomId,
+      vomiting: data.vomiting.present ? data.vomiting.value : this.vomiting,
+      vomitFreq: data.vomitFreq.present ? data.vomitFreq.value : this.vomitFreq,
+      appetite: data.appetite.present ? data.appetite.value : this.appetite,
+      dehydrationSignsJson: data.dehydrationSignsJson.present
+          ? data.dehydrationSignsJson.value
+          : this.dehydrationSignsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomNauseaData(')
+          ..write('symptomId: $symptomId, ')
+          ..write('vomiting: $vomiting, ')
+          ..write('vomitFreq: $vomitFreq, ')
+          ..write('appetite: $appetite, ')
+          ..write('dehydrationSignsJson: $dehydrationSignsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symptomId,
+    vomiting,
+    vomitFreq,
+    appetite,
+    dehydrationSignsJson,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SymptomNauseaData &&
+          other.symptomId == this.symptomId &&
+          other.vomiting == this.vomiting &&
+          other.vomitFreq == this.vomitFreq &&
+          other.appetite == this.appetite &&
+          other.dehydrationSignsJson == this.dehydrationSignsJson);
+}
+
+class SymptomNauseaCompanion extends UpdateCompanion<SymptomNauseaData> {
+  final Value<String> symptomId;
+  final Value<bool> vomiting;
+  final Value<String?> vomitFreq;
+  final Value<String> appetite;
+  final Value<String?> dehydrationSignsJson;
+  final Value<int> rowid;
+  const SymptomNauseaCompanion({
+    this.symptomId = const Value.absent(),
+    this.vomiting = const Value.absent(),
+    this.vomitFreq = const Value.absent(),
+    this.appetite = const Value.absent(),
+    this.dehydrationSignsJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SymptomNauseaCompanion.insert({
+    required String symptomId,
+    required bool vomiting,
+    this.vomitFreq = const Value.absent(),
+    required String appetite,
+    this.dehydrationSignsJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symptomId = Value(symptomId),
+       vomiting = Value(vomiting),
+       appetite = Value(appetite);
+  static Insertable<SymptomNauseaData> custom({
+    Expression<String>? symptomId,
+    Expression<bool>? vomiting,
+    Expression<String>? vomitFreq,
+    Expression<String>? appetite,
+    Expression<String>? dehydrationSignsJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symptomId != null) 'symptom_id': symptomId,
+      if (vomiting != null) 'vomiting': vomiting,
+      if (vomitFreq != null) 'vomit_freq': vomitFreq,
+      if (appetite != null) 'appetite': appetite,
+      if (dehydrationSignsJson != null)
+        'dehydration_signs_json': dehydrationSignsJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SymptomNauseaCompanion copyWith({
+    Value<String>? symptomId,
+    Value<bool>? vomiting,
+    Value<String?>? vomitFreq,
+    Value<String>? appetite,
+    Value<String?>? dehydrationSignsJson,
+    Value<int>? rowid,
+  }) {
+    return SymptomNauseaCompanion(
+      symptomId: symptomId ?? this.symptomId,
+      vomiting: vomiting ?? this.vomiting,
+      vomitFreq: vomitFreq ?? this.vomitFreq,
+      appetite: appetite ?? this.appetite,
+      dehydrationSignsJson: dehydrationSignsJson ?? this.dehydrationSignsJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symptomId.present) {
+      map['symptom_id'] = Variable<String>(symptomId.value);
+    }
+    if (vomiting.present) {
+      map['vomiting'] = Variable<bool>(vomiting.value);
+    }
+    if (vomitFreq.present) {
+      map['vomit_freq'] = Variable<String>(vomitFreq.value);
+    }
+    if (appetite.present) {
+      map['appetite'] = Variable<String>(appetite.value);
+    }
+    if (dehydrationSignsJson.present) {
+      map['dehydration_signs_json'] = Variable<String>(
+        dehydrationSignsJson.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomNauseaCompanion(')
+          ..write('symptomId: $symptomId, ')
+          ..write('vomiting: $vomiting, ')
+          ..write('vomitFreq: $vomitFreq, ')
+          ..write('appetite: $appetite, ')
+          ..write('dehydrationSignsJson: $dehydrationSignsJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SymptomOtherTable extends SymptomOther
+    with TableInfo<$SymptomOtherTable, SymptomOtherData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SymptomOtherTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symptomIdMeta = const VerificationMeta(
+    'symptomId',
+  );
+  @override
+  late final GeneratedColumn<String> symptomId = GeneratedColumn<String>(
+    'symptom_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_in_symptoms (id)',
+    ),
+  );
+  static const VerificationMeta _freeTextMeta = const VerificationMeta(
+    'freeText',
+  );
+  @override
+  late final GeneratedColumn<String> freeText = GeneratedColumn<String>(
+    'free_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _extractedDetailsJsonMeta =
+      const VerificationMeta('extractedDetailsJson');
+  @override
+  late final GeneratedColumn<String> extractedDetailsJson =
+      GeneratedColumn<String>(
+        'extracted_details_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symptomId,
+    freeText,
+    extractedDetailsJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'symptom_other';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SymptomOtherData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symptom_id')) {
+      context.handle(
+        _symptomIdMeta,
+        symptomId.isAcceptableOrUnknown(data['symptom_id']!, _symptomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symptomIdMeta);
+    }
+    if (data.containsKey('free_text')) {
+      context.handle(
+        _freeTextMeta,
+        freeText.isAcceptableOrUnknown(data['free_text']!, _freeTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_freeTextMeta);
+    }
+    if (data.containsKey('extracted_details_json')) {
+      context.handle(
+        _extractedDetailsJsonMeta,
+        extractedDetailsJson.isAcceptableOrUnknown(
+          data['extracted_details_json']!,
+          _extractedDetailsJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symptomId};
+  @override
+  SymptomOtherData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SymptomOtherData(
+      symptomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptom_id'],
+      )!,
+      freeText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}free_text'],
+      )!,
+      extractedDetailsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extracted_details_json'],
+      ),
+    );
+  }
+
+  @override
+  $SymptomOtherTable createAlias(String alias) {
+    return $SymptomOtherTable(attachedDatabase, alias);
+  }
+}
+
+class SymptomOtherData extends DataClass
+    implements Insertable<SymptomOtherData> {
+  final String symptomId;
+  final String freeText;
+  final String? extractedDetailsJson;
+  const SymptomOtherData({
+    required this.symptomId,
+    required this.freeText,
+    this.extractedDetailsJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symptom_id'] = Variable<String>(symptomId);
+    map['free_text'] = Variable<String>(freeText);
+    if (!nullToAbsent || extractedDetailsJson != null) {
+      map['extracted_details_json'] = Variable<String>(extractedDetailsJson);
+    }
+    return map;
+  }
+
+  SymptomOtherCompanion toCompanion(bool nullToAbsent) {
+    return SymptomOtherCompanion(
+      symptomId: Value(symptomId),
+      freeText: Value(freeText),
+      extractedDetailsJson: extractedDetailsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(extractedDetailsJson),
+    );
+  }
+
+  factory SymptomOtherData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SymptomOtherData(
+      symptomId: serializer.fromJson<String>(json['symptomId']),
+      freeText: serializer.fromJson<String>(json['freeText']),
+      extractedDetailsJson: serializer.fromJson<String?>(
+        json['extractedDetailsJson'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symptomId': serializer.toJson<String>(symptomId),
+      'freeText': serializer.toJson<String>(freeText),
+      'extractedDetailsJson': serializer.toJson<String?>(extractedDetailsJson),
+    };
+  }
+
+  SymptomOtherData copyWith({
+    String? symptomId,
+    String? freeText,
+    Value<String?> extractedDetailsJson = const Value.absent(),
+  }) => SymptomOtherData(
+    symptomId: symptomId ?? this.symptomId,
+    freeText: freeText ?? this.freeText,
+    extractedDetailsJson: extractedDetailsJson.present
+        ? extractedDetailsJson.value
+        : this.extractedDetailsJson,
+  );
+  SymptomOtherData copyWithCompanion(SymptomOtherCompanion data) {
+    return SymptomOtherData(
+      symptomId: data.symptomId.present ? data.symptomId.value : this.symptomId,
+      freeText: data.freeText.present ? data.freeText.value : this.freeText,
+      extractedDetailsJson: data.extractedDetailsJson.present
+          ? data.extractedDetailsJson.value
+          : this.extractedDetailsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomOtherData(')
+          ..write('symptomId: $symptomId, ')
+          ..write('freeText: $freeText, ')
+          ..write('extractedDetailsJson: $extractedDetailsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symptomId, freeText, extractedDetailsJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SymptomOtherData &&
+          other.symptomId == this.symptomId &&
+          other.freeText == this.freeText &&
+          other.extractedDetailsJson == this.extractedDetailsJson);
+}
+
+class SymptomOtherCompanion extends UpdateCompanion<SymptomOtherData> {
+  final Value<String> symptomId;
+  final Value<String> freeText;
+  final Value<String?> extractedDetailsJson;
+  final Value<int> rowid;
+  const SymptomOtherCompanion({
+    this.symptomId = const Value.absent(),
+    this.freeText = const Value.absent(),
+    this.extractedDetailsJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SymptomOtherCompanion.insert({
+    required String symptomId,
+    required String freeText,
+    this.extractedDetailsJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symptomId = Value(symptomId),
+       freeText = Value(freeText);
+  static Insertable<SymptomOtherData> custom({
+    Expression<String>? symptomId,
+    Expression<String>? freeText,
+    Expression<String>? extractedDetailsJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symptomId != null) 'symptom_id': symptomId,
+      if (freeText != null) 'free_text': freeText,
+      if (extractedDetailsJson != null)
+        'extracted_details_json': extractedDetailsJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SymptomOtherCompanion copyWith({
+    Value<String>? symptomId,
+    Value<String>? freeText,
+    Value<String?>? extractedDetailsJson,
+    Value<int>? rowid,
+  }) {
+    return SymptomOtherCompanion(
+      symptomId: symptomId ?? this.symptomId,
+      freeText: freeText ?? this.freeText,
+      extractedDetailsJson: extractedDetailsJson ?? this.extractedDetailsJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symptomId.present) {
+      map['symptom_id'] = Variable<String>(symptomId.value);
+    }
+    if (freeText.present) {
+      map['free_text'] = Variable<String>(freeText.value);
+    }
+    if (extractedDetailsJson.present) {
+      map['extracted_details_json'] = Variable<String>(
+        extractedDetailsJson.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SymptomOtherCompanion(')
+          ..write('symptomId: $symptomId, ')
+          ..write('freeText: $freeText, ')
+          ..write('extractedDetailsJson: $extractedDetailsJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CheckInSubjectiveTable extends CheckInSubjective
+    with TableInfo<$CheckInSubjectiveTable, CheckInSubjectiveData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CheckInSubjectiveTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _checkInIdMeta = const VerificationMeta(
+    'checkInId',
+  );
+  @override
+  late final GeneratedColumn<String> checkInId = GeneratedColumn<String>(
+    'check_in_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES check_ins (id)',
+    ),
+  );
+  static const VerificationMeta _freeNotesMeta = const VerificationMeta(
+    'freeNotes',
+  );
+  @override
+  late final GeneratedColumn<String> freeNotes = GeneratedColumn<String>(
+    'free_notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _slmTagsJsonMeta = const VerificationMeta(
+    'slmTagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> slmTagsJson = GeneratedColumn<String>(
+    'slm_tags_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _followUpExchangesJsonMeta =
+      const VerificationMeta('followUpExchangesJson');
+  @override
+  late final GeneratedColumn<String> followUpExchangesJson =
+      GeneratedColumn<String>(
+        'follow_up_exchanges_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    checkInId,
+    freeNotes,
+    slmTagsJson,
+    followUpExchangesJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'check_in_subjective';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CheckInSubjectiveData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('check_in_id')) {
+      context.handle(
+        _checkInIdMeta,
+        checkInId.isAcceptableOrUnknown(data['check_in_id']!, _checkInIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_checkInIdMeta);
+    }
+    if (data.containsKey('free_notes')) {
+      context.handle(
+        _freeNotesMeta,
+        freeNotes.isAcceptableOrUnknown(data['free_notes']!, _freeNotesMeta),
+      );
+    }
+    if (data.containsKey('slm_tags_json')) {
+      context.handle(
+        _slmTagsJsonMeta,
+        slmTagsJson.isAcceptableOrUnknown(
+          data['slm_tags_json']!,
+          _slmTagsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('follow_up_exchanges_json')) {
+      context.handle(
+        _followUpExchangesJsonMeta,
+        followUpExchangesJson.isAcceptableOrUnknown(
+          data['follow_up_exchanges_json']!,
+          _followUpExchangesJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {checkInId};
+  @override
+  CheckInSubjectiveData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CheckInSubjectiveData(
+      checkInId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}check_in_id'],
+      )!,
+      freeNotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}free_notes'],
+      ),
+      slmTagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}slm_tags_json'],
+      ),
+      followUpExchangesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}follow_up_exchanges_json'],
+      ),
+    );
+  }
+
+  @override
+  $CheckInSubjectiveTable createAlias(String alias) {
+    return $CheckInSubjectiveTable(attachedDatabase, alias);
+  }
+}
+
+class CheckInSubjectiveData extends DataClass
+    implements Insertable<CheckInSubjectiveData> {
+  final String checkInId;
+  final String? freeNotes;
+  final String? slmTagsJson;
+  final String? followUpExchangesJson;
+  const CheckInSubjectiveData({
+    required this.checkInId,
+    this.freeNotes,
+    this.slmTagsJson,
+    this.followUpExchangesJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['check_in_id'] = Variable<String>(checkInId);
+    if (!nullToAbsent || freeNotes != null) {
+      map['free_notes'] = Variable<String>(freeNotes);
+    }
+    if (!nullToAbsent || slmTagsJson != null) {
+      map['slm_tags_json'] = Variable<String>(slmTagsJson);
+    }
+    if (!nullToAbsent || followUpExchangesJson != null) {
+      map['follow_up_exchanges_json'] = Variable<String>(followUpExchangesJson);
+    }
+    return map;
+  }
+
+  CheckInSubjectiveCompanion toCompanion(bool nullToAbsent) {
+    return CheckInSubjectiveCompanion(
+      checkInId: Value(checkInId),
+      freeNotes: freeNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(freeNotes),
+      slmTagsJson: slmTagsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(slmTagsJson),
+      followUpExchangesJson: followUpExchangesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followUpExchangesJson),
+    );
+  }
+
+  factory CheckInSubjectiveData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CheckInSubjectiveData(
+      checkInId: serializer.fromJson<String>(json['checkInId']),
+      freeNotes: serializer.fromJson<String?>(json['freeNotes']),
+      slmTagsJson: serializer.fromJson<String?>(json['slmTagsJson']),
+      followUpExchangesJson: serializer.fromJson<String?>(
+        json['followUpExchangesJson'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'checkInId': serializer.toJson<String>(checkInId),
+      'freeNotes': serializer.toJson<String?>(freeNotes),
+      'slmTagsJson': serializer.toJson<String?>(slmTagsJson),
+      'followUpExchangesJson': serializer.toJson<String?>(
+        followUpExchangesJson,
+      ),
+    };
+  }
+
+  CheckInSubjectiveData copyWith({
+    String? checkInId,
+    Value<String?> freeNotes = const Value.absent(),
+    Value<String?> slmTagsJson = const Value.absent(),
+    Value<String?> followUpExchangesJson = const Value.absent(),
+  }) => CheckInSubjectiveData(
+    checkInId: checkInId ?? this.checkInId,
+    freeNotes: freeNotes.present ? freeNotes.value : this.freeNotes,
+    slmTagsJson: slmTagsJson.present ? slmTagsJson.value : this.slmTagsJson,
+    followUpExchangesJson: followUpExchangesJson.present
+        ? followUpExchangesJson.value
+        : this.followUpExchangesJson,
+  );
+  CheckInSubjectiveData copyWithCompanion(CheckInSubjectiveCompanion data) {
+    return CheckInSubjectiveData(
+      checkInId: data.checkInId.present ? data.checkInId.value : this.checkInId,
+      freeNotes: data.freeNotes.present ? data.freeNotes.value : this.freeNotes,
+      slmTagsJson: data.slmTagsJson.present
+          ? data.slmTagsJson.value
+          : this.slmTagsJson,
+      followUpExchangesJson: data.followUpExchangesJson.present
+          ? data.followUpExchangesJson.value
+          : this.followUpExchangesJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CheckInSubjectiveData(')
+          ..write('checkInId: $checkInId, ')
+          ..write('freeNotes: $freeNotes, ')
+          ..write('slmTagsJson: $slmTagsJson, ')
+          ..write('followUpExchangesJson: $followUpExchangesJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(checkInId, freeNotes, slmTagsJson, followUpExchangesJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CheckInSubjectiveData &&
+          other.checkInId == this.checkInId &&
+          other.freeNotes == this.freeNotes &&
+          other.slmTagsJson == this.slmTagsJson &&
+          other.followUpExchangesJson == this.followUpExchangesJson);
+}
+
+class CheckInSubjectiveCompanion
+    extends UpdateCompanion<CheckInSubjectiveData> {
+  final Value<String> checkInId;
+  final Value<String?> freeNotes;
+  final Value<String?> slmTagsJson;
+  final Value<String?> followUpExchangesJson;
+  final Value<int> rowid;
+  const CheckInSubjectiveCompanion({
+    this.checkInId = const Value.absent(),
+    this.freeNotes = const Value.absent(),
+    this.slmTagsJson = const Value.absent(),
+    this.followUpExchangesJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CheckInSubjectiveCompanion.insert({
+    required String checkInId,
+    this.freeNotes = const Value.absent(),
+    this.slmTagsJson = const Value.absent(),
+    this.followUpExchangesJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : checkInId = Value(checkInId);
+  static Insertable<CheckInSubjectiveData> custom({
+    Expression<String>? checkInId,
+    Expression<String>? freeNotes,
+    Expression<String>? slmTagsJson,
+    Expression<String>? followUpExchangesJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (checkInId != null) 'check_in_id': checkInId,
+      if (freeNotes != null) 'free_notes': freeNotes,
+      if (slmTagsJson != null) 'slm_tags_json': slmTagsJson,
+      if (followUpExchangesJson != null)
+        'follow_up_exchanges_json': followUpExchangesJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CheckInSubjectiveCompanion copyWith({
+    Value<String>? checkInId,
+    Value<String?>? freeNotes,
+    Value<String?>? slmTagsJson,
+    Value<String?>? followUpExchangesJson,
+    Value<int>? rowid,
+  }) {
+    return CheckInSubjectiveCompanion(
+      checkInId: checkInId ?? this.checkInId,
+      freeNotes: freeNotes ?? this.freeNotes,
+      slmTagsJson: slmTagsJson ?? this.slmTagsJson,
+      followUpExchangesJson:
+          followUpExchangesJson ?? this.followUpExchangesJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (checkInId.present) {
+      map['check_in_id'] = Variable<String>(checkInId.value);
+    }
+    if (freeNotes.present) {
+      map['free_notes'] = Variable<String>(freeNotes.value);
+    }
+    if (slmTagsJson.present) {
+      map['slm_tags_json'] = Variable<String>(slmTagsJson.value);
+    }
+    if (followUpExchangesJson.present) {
+      map['follow_up_exchanges_json'] = Variable<String>(
+        followUpExchangesJson.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CheckInSubjectiveCompanion(')
+          ..write('checkInId: $checkInId, ')
+          ..write('freeNotes: $freeNotes, ')
+          ..write('slmTagsJson: $slmTagsJson, ')
+          ..write('followUpExchangesJson: $followUpExchangesJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2876,6 +5209,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $CheckInsTable checkIns = $CheckInsTable(this);
+  late final $CheckInSymptomsTable checkInSymptoms = $CheckInSymptomsTable(
+    this,
+  );
+  late final $SymptomFeverTable symptomFever = $SymptomFeverTable(this);
+  late final $SymptomPainTable symptomPain = $SymptomPainTable(this);
+  late final $SymptomFatigueTable symptomFatigue = $SymptomFatigueTable(this);
+  late final $SymptomNauseaTable symptomNausea = $SymptomNauseaTable(this);
+  late final $SymptomOtherTable symptomOther = $SymptomOtherTable(this);
+  late final $CheckInSubjectiveTable checkInSubjective =
+      $CheckInSubjectiveTable(this);
   late final $PetStateTableTable petStateTable = $PetStateTableTable(this);
   late final $BaselineStatsTable baselineStats = $BaselineStatsTable(this);
   late final $AuditLogTable auditLog = $AuditLogTable(this);
@@ -2889,6 +5232,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     checkIns,
+    checkInSymptoms,
+    symptomFever,
+    symptomPain,
+    symptomFatigue,
+    symptomNausea,
+    symptomOther,
+    checkInSubjective,
     petStateTable,
     baselineStats,
     auditLog,
@@ -2904,7 +5254,6 @@ typedef $$CheckInsTableCreateCompanionBuilder =
       required String localDate,
       required int wellnessScore,
       required int mode,
-      required String answersJson,
       Value<double> depthScore,
       Value<bool> isPartial,
       Value<String?> amendedAt,
@@ -2918,13 +5267,67 @@ typedef $$CheckInsTableUpdateCompanionBuilder =
       Value<String> localDate,
       Value<int> wellnessScore,
       Value<int> mode,
-      Value<String> answersJson,
       Value<double> depthScore,
       Value<bool> isPartial,
       Value<String?> amendedAt,
       Value<String> createdAt,
       Value<int> rowid,
     });
+
+final class $$CheckInsTableReferences
+    extends BaseReferences<_$AppDatabase, $CheckInsTable, CheckIn> {
+  $$CheckInsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$CheckInSymptomsTable, List<CheckInSymptom>>
+  _checkInSymptomsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.checkInSymptoms,
+    aliasName: $_aliasNameGenerator(
+      db.checkIns.id,
+      db.checkInSymptoms.checkInId,
+    ),
+  );
+
+  $$CheckInSymptomsTableProcessedTableManager get checkInSymptomsRefs {
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.checkInId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _checkInSymptomsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CheckInSubjectiveTable,
+    List<CheckInSubjectiveData>
+  >
+  _checkInSubjectiveRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.checkInSubjective,
+        aliasName: $_aliasNameGenerator(
+          db.checkIns.id,
+          db.checkInSubjective.checkInId,
+        ),
+      );
+
+  $$CheckInSubjectiveTableProcessedTableManager get checkInSubjectiveRefs {
+    final manager = $$CheckInSubjectiveTableTableManager(
+      $_db,
+      $_db.checkInSubjective,
+    ).filter((f) => f.checkInId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _checkInSubjectiveRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$CheckInsTableFilterComposer
     extends Composer<_$AppDatabase, $CheckInsTable> {
@@ -2960,11 +5363,6 @@ class $$CheckInsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get answersJson => $composableBuilder(
-    column: $table.answersJson,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<double> get depthScore => $composableBuilder(
     column: $table.depthScore,
     builder: (column) => ColumnFilters(column),
@@ -2984,6 +5382,56 @@ class $$CheckInsTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> checkInSymptomsRefs(
+    Expression<bool> Function($$CheckInSymptomsTableFilterComposer f) f,
+  ) {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.checkInId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> checkInSubjectiveRefs(
+    Expression<bool> Function($$CheckInSubjectiveTableFilterComposer f) f,
+  ) {
+    final $$CheckInSubjectiveTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.checkInSubjective,
+      getReferencedColumn: (t) => t.checkInId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSubjectiveTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSubjective,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CheckInsTableOrderingComposer
@@ -3017,11 +5465,6 @@ class $$CheckInsTableOrderingComposer
 
   ColumnOrderings<int> get mode => $composableBuilder(
     column: $table.mode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get answersJson => $composableBuilder(
-    column: $table.answersJson,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3072,11 +5515,6 @@ class $$CheckInsTableAnnotationComposer
   GeneratedColumn<int> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 
-  GeneratedColumn<String> get answersJson => $composableBuilder(
-    column: $table.answersJson,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<double> get depthScore => $composableBuilder(
     column: $table.depthScore,
     builder: (column) => column,
@@ -3090,6 +5528,57 @@ class $$CheckInsTableAnnotationComposer
 
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> checkInSymptomsRefs<T extends Object>(
+    Expression<T> Function($$CheckInSymptomsTableAnnotationComposer a) f,
+  ) {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.checkInId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> checkInSubjectiveRefs<T extends Object>(
+    Expression<T> Function($$CheckInSubjectiveTableAnnotationComposer a) f,
+  ) {
+    final $$CheckInSubjectiveTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.checkInSubjective,
+          getReferencedColumn: (t) => t.checkInId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CheckInSubjectiveTableAnnotationComposer(
+                $db: $db,
+                $table: $db.checkInSubjective,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$CheckInsTableTableManager
@@ -3103,9 +5592,12 @@ class $$CheckInsTableTableManager
           $$CheckInsTableAnnotationComposer,
           $$CheckInsTableCreateCompanionBuilder,
           $$CheckInsTableUpdateCompanionBuilder,
-          (CheckIn, BaseReferences<_$AppDatabase, $CheckInsTable, CheckIn>),
+          (CheckIn, $$CheckInsTableReferences),
           CheckIn,
-          PrefetchHooks Function()
+          PrefetchHooks Function({
+            bool checkInSymptomsRefs,
+            bool checkInSubjectiveRefs,
+          })
         > {
   $$CheckInsTableTableManager(_$AppDatabase db, $CheckInsTable table)
     : super(
@@ -3125,7 +5617,6 @@ class $$CheckInsTableTableManager
                 Value<String> localDate = const Value.absent(),
                 Value<int> wellnessScore = const Value.absent(),
                 Value<int> mode = const Value.absent(),
-                Value<String> answersJson = const Value.absent(),
                 Value<double> depthScore = const Value.absent(),
                 Value<bool> isPartial = const Value.absent(),
                 Value<String?> amendedAt = const Value.absent(),
@@ -3137,7 +5628,6 @@ class $$CheckInsTableTableManager
                 localDate: localDate,
                 wellnessScore: wellnessScore,
                 mode: mode,
-                answersJson: answersJson,
                 depthScore: depthScore,
                 isPartial: isPartial,
                 amendedAt: amendedAt,
@@ -3151,7 +5641,6 @@ class $$CheckInsTableTableManager
                 required String localDate,
                 required int wellnessScore,
                 required int mode,
-                required String answersJson,
                 Value<double> depthScore = const Value.absent(),
                 Value<bool> isPartial = const Value.absent(),
                 Value<String?> amendedAt = const Value.absent(),
@@ -3163,7 +5652,6 @@ class $$CheckInsTableTableManager
                 localDate: localDate,
                 wellnessScore: wellnessScore,
                 mode: mode,
-                answersJson: answersJson,
                 depthScore: depthScore,
                 isPartial: isPartial,
                 amendedAt: amendedAt,
@@ -3171,9 +5659,70 @@ class $$CheckInsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CheckInsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({checkInSymptomsRefs = false, checkInSubjectiveRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (checkInSymptomsRefs) db.checkInSymptoms,
+                    if (checkInSubjectiveRefs) db.checkInSubjective,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (checkInSymptomsRefs)
+                        await $_getPrefetchedData<
+                          CheckIn,
+                          $CheckInsTable,
+                          CheckInSymptom
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInsTableReferences
+                              ._checkInSymptomsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).checkInSymptomsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.checkInId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (checkInSubjectiveRefs)
+                        await $_getPrefetchedData<
+                          CheckIn,
+                          $CheckInsTable,
+                          CheckInSubjectiveData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInsTableReferences
+                              ._checkInSubjectiveRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).checkInSubjectiveRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.checkInId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
         ),
       );
 }
@@ -3188,9 +5737,2683 @@ typedef $$CheckInsTableProcessedTableManager =
       $$CheckInsTableAnnotationComposer,
       $$CheckInsTableCreateCompanionBuilder,
       $$CheckInsTableUpdateCompanionBuilder,
-      (CheckIn, BaseReferences<_$AppDatabase, $CheckInsTable, CheckIn>),
+      (CheckIn, $$CheckInsTableReferences),
       CheckIn,
-      PrefetchHooks Function()
+      PrefetchHooks Function({
+        bool checkInSymptomsRefs,
+        bool checkInSubjectiveRefs,
+      })
+    >;
+typedef $$CheckInSymptomsTableCreateCompanionBuilder =
+    CheckInSymptomsCompanion Function({
+      required String id,
+      required String checkInId,
+      required String category,
+      Value<int?> onsetDay,
+      Value<String?> pattern,
+      Value<int> rowid,
+    });
+typedef $$CheckInSymptomsTableUpdateCompanionBuilder =
+    CheckInSymptomsCompanion Function({
+      Value<String> id,
+      Value<String> checkInId,
+      Value<String> category,
+      Value<int?> onsetDay,
+      Value<String?> pattern,
+      Value<int> rowid,
+    });
+
+final class $$CheckInSymptomsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $CheckInSymptomsTable, CheckInSymptom> {
+  $$CheckInSymptomsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CheckInsTable _checkInIdTable(_$AppDatabase db) =>
+      db.checkIns.createAlias(
+        $_aliasNameGenerator(db.checkInSymptoms.checkInId, db.checkIns.id),
+      );
+
+  $$CheckInsTableProcessedTableManager get checkInId {
+    final $_column = $_itemColumn<String>('check_in_id')!;
+
+    final manager = $$CheckInsTableTableManager(
+      $_db,
+      $_db.checkIns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_checkInIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$SymptomFeverTable, List<SymptomFeverData>>
+  _symptomFeverRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.symptomFever,
+    aliasName: $_aliasNameGenerator(
+      db.checkInSymptoms.id,
+      db.symptomFever.symptomId,
+    ),
+  );
+
+  $$SymptomFeverTableProcessedTableManager get symptomFeverRefs {
+    final manager = $$SymptomFeverTableTableManager(
+      $_db,
+      $_db.symptomFever,
+    ).filter((f) => f.symptomId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_symptomFeverRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SymptomPainTable, List<SymptomPainData>>
+  _symptomPainRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.symptomPain,
+    aliasName: $_aliasNameGenerator(
+      db.checkInSymptoms.id,
+      db.symptomPain.symptomId,
+    ),
+  );
+
+  $$SymptomPainTableProcessedTableManager get symptomPainRefs {
+    final manager = $$SymptomPainTableTableManager(
+      $_db,
+      $_db.symptomPain,
+    ).filter((f) => f.symptomId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_symptomPainRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SymptomFatigueTable, List<SymptomFatigueData>>
+  _symptomFatigueRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.symptomFatigue,
+    aliasName: $_aliasNameGenerator(
+      db.checkInSymptoms.id,
+      db.symptomFatigue.symptomId,
+    ),
+  );
+
+  $$SymptomFatigueTableProcessedTableManager get symptomFatigueRefs {
+    final manager = $$SymptomFatigueTableTableManager(
+      $_db,
+      $_db.symptomFatigue,
+    ).filter((f) => f.symptomId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_symptomFatigueRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SymptomNauseaTable, List<SymptomNauseaData>>
+  _symptomNauseaRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.symptomNausea,
+    aliasName: $_aliasNameGenerator(
+      db.checkInSymptoms.id,
+      db.symptomNausea.symptomId,
+    ),
+  );
+
+  $$SymptomNauseaTableProcessedTableManager get symptomNauseaRefs {
+    final manager = $$SymptomNauseaTableTableManager(
+      $_db,
+      $_db.symptomNausea,
+    ).filter((f) => f.symptomId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_symptomNauseaRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SymptomOtherTable, List<SymptomOtherData>>
+  _symptomOtherRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.symptomOther,
+    aliasName: $_aliasNameGenerator(
+      db.checkInSymptoms.id,
+      db.symptomOther.symptomId,
+    ),
+  );
+
+  $$SymptomOtherTableProcessedTableManager get symptomOtherRefs {
+    final manager = $$SymptomOtherTableTableManager(
+      $_db,
+      $_db.symptomOther,
+    ).filter((f) => f.symptomId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_symptomOtherRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CheckInSymptomsTableFilterComposer
+    extends Composer<_$AppDatabase, $CheckInSymptomsTable> {
+  $$CheckInSymptomsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get onsetDay => $composableBuilder(
+    column: $table.onsetDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pattern => $composableBuilder(
+    column: $table.pattern,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInsTableFilterComposer get checkInId {
+    final $$CheckInsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> symptomFeverRefs(
+    Expression<bool> Function($$SymptomFeverTableFilterComposer f) f,
+  ) {
+    final $$SymptomFeverTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomFever,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomFeverTableFilterComposer(
+            $db: $db,
+            $table: $db.symptomFever,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> symptomPainRefs(
+    Expression<bool> Function($$SymptomPainTableFilterComposer f) f,
+  ) {
+    final $$SymptomPainTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomPain,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomPainTableFilterComposer(
+            $db: $db,
+            $table: $db.symptomPain,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> symptomFatigueRefs(
+    Expression<bool> Function($$SymptomFatigueTableFilterComposer f) f,
+  ) {
+    final $$SymptomFatigueTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomFatigue,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomFatigueTableFilterComposer(
+            $db: $db,
+            $table: $db.symptomFatigue,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> symptomNauseaRefs(
+    Expression<bool> Function($$SymptomNauseaTableFilterComposer f) f,
+  ) {
+    final $$SymptomNauseaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomNausea,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomNauseaTableFilterComposer(
+            $db: $db,
+            $table: $db.symptomNausea,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> symptomOtherRefs(
+    Expression<bool> Function($$SymptomOtherTableFilterComposer f) f,
+  ) {
+    final $$SymptomOtherTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomOther,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomOtherTableFilterComposer(
+            $db: $db,
+            $table: $db.symptomOther,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CheckInSymptomsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CheckInSymptomsTable> {
+  $$CheckInSymptomsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get onsetDay => $composableBuilder(
+    column: $table.onsetDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pattern => $composableBuilder(
+    column: $table.pattern,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInsTableOrderingComposer get checkInId {
+    final $$CheckInsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CheckInSymptomsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CheckInSymptomsTable> {
+  $$CheckInSymptomsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<int> get onsetDay =>
+      $composableBuilder(column: $table.onsetDay, builder: (column) => column);
+
+  GeneratedColumn<String> get pattern =>
+      $composableBuilder(column: $table.pattern, builder: (column) => column);
+
+  $$CheckInsTableAnnotationComposer get checkInId {
+    final $$CheckInsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> symptomFeverRefs<T extends Object>(
+    Expression<T> Function($$SymptomFeverTableAnnotationComposer a) f,
+  ) {
+    final $$SymptomFeverTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomFever,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomFeverTableAnnotationComposer(
+            $db: $db,
+            $table: $db.symptomFever,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> symptomPainRefs<T extends Object>(
+    Expression<T> Function($$SymptomPainTableAnnotationComposer a) f,
+  ) {
+    final $$SymptomPainTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomPain,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomPainTableAnnotationComposer(
+            $db: $db,
+            $table: $db.symptomPain,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> symptomFatigueRefs<T extends Object>(
+    Expression<T> Function($$SymptomFatigueTableAnnotationComposer a) f,
+  ) {
+    final $$SymptomFatigueTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomFatigue,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomFatigueTableAnnotationComposer(
+            $db: $db,
+            $table: $db.symptomFatigue,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> symptomNauseaRefs<T extends Object>(
+    Expression<T> Function($$SymptomNauseaTableAnnotationComposer a) f,
+  ) {
+    final $$SymptomNauseaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomNausea,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomNauseaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.symptomNausea,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> symptomOtherRefs<T extends Object>(
+    Expression<T> Function($$SymptomOtherTableAnnotationComposer a) f,
+  ) {
+    final $$SymptomOtherTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.symptomOther,
+      getReferencedColumn: (t) => t.symptomId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SymptomOtherTableAnnotationComposer(
+            $db: $db,
+            $table: $db.symptomOther,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CheckInSymptomsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CheckInSymptomsTable,
+          CheckInSymptom,
+          $$CheckInSymptomsTableFilterComposer,
+          $$CheckInSymptomsTableOrderingComposer,
+          $$CheckInSymptomsTableAnnotationComposer,
+          $$CheckInSymptomsTableCreateCompanionBuilder,
+          $$CheckInSymptomsTableUpdateCompanionBuilder,
+          (CheckInSymptom, $$CheckInSymptomsTableReferences),
+          CheckInSymptom,
+          PrefetchHooks Function({
+            bool checkInId,
+            bool symptomFeverRefs,
+            bool symptomPainRefs,
+            bool symptomFatigueRefs,
+            bool symptomNauseaRefs,
+            bool symptomOtherRefs,
+          })
+        > {
+  $$CheckInSymptomsTableTableManager(
+    _$AppDatabase db,
+    $CheckInSymptomsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CheckInSymptomsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CheckInSymptomsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CheckInSymptomsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> checkInId = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<int?> onsetDay = const Value.absent(),
+                Value<String?> pattern = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CheckInSymptomsCompanion(
+                id: id,
+                checkInId: checkInId,
+                category: category,
+                onsetDay: onsetDay,
+                pattern: pattern,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String checkInId,
+                required String category,
+                Value<int?> onsetDay = const Value.absent(),
+                Value<String?> pattern = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CheckInSymptomsCompanion.insert(
+                id: id,
+                checkInId: checkInId,
+                category: category,
+                onsetDay: onsetDay,
+                pattern: pattern,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CheckInSymptomsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                checkInId = false,
+                symptomFeverRefs = false,
+                symptomPainRefs = false,
+                symptomFatigueRefs = false,
+                symptomNauseaRefs = false,
+                symptomOtherRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (symptomFeverRefs) db.symptomFever,
+                    if (symptomPainRefs) db.symptomPain,
+                    if (symptomFatigueRefs) db.symptomFatigue,
+                    if (symptomNauseaRefs) db.symptomNausea,
+                    if (symptomOtherRefs) db.symptomOther,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (checkInId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.checkInId,
+                                    referencedTable:
+                                        $$CheckInSymptomsTableReferences
+                                            ._checkInIdTable(db),
+                                    referencedColumn:
+                                        $$CheckInSymptomsTableReferences
+                                            ._checkInIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (symptomFeverRefs)
+                        await $_getPrefetchedData<
+                          CheckInSymptom,
+                          $CheckInSymptomsTable,
+                          SymptomFeverData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInSymptomsTableReferences
+                              ._symptomFeverRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInSymptomsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).symptomFeverRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symptomId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (symptomPainRefs)
+                        await $_getPrefetchedData<
+                          CheckInSymptom,
+                          $CheckInSymptomsTable,
+                          SymptomPainData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInSymptomsTableReferences
+                              ._symptomPainRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInSymptomsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).symptomPainRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symptomId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (symptomFatigueRefs)
+                        await $_getPrefetchedData<
+                          CheckInSymptom,
+                          $CheckInSymptomsTable,
+                          SymptomFatigueData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInSymptomsTableReferences
+                              ._symptomFatigueRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInSymptomsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).symptomFatigueRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symptomId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (symptomNauseaRefs)
+                        await $_getPrefetchedData<
+                          CheckInSymptom,
+                          $CheckInSymptomsTable,
+                          SymptomNauseaData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInSymptomsTableReferences
+                              ._symptomNauseaRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInSymptomsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).symptomNauseaRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symptomId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (symptomOtherRefs)
+                        await $_getPrefetchedData<
+                          CheckInSymptom,
+                          $CheckInSymptomsTable,
+                          SymptomOtherData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CheckInSymptomsTableReferences
+                              ._symptomOtherRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CheckInSymptomsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).symptomOtherRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symptomId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CheckInSymptomsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CheckInSymptomsTable,
+      CheckInSymptom,
+      $$CheckInSymptomsTableFilterComposer,
+      $$CheckInSymptomsTableOrderingComposer,
+      $$CheckInSymptomsTableAnnotationComposer,
+      $$CheckInSymptomsTableCreateCompanionBuilder,
+      $$CheckInSymptomsTableUpdateCompanionBuilder,
+      (CheckInSymptom, $$CheckInSymptomsTableReferences),
+      CheckInSymptom,
+      PrefetchHooks Function({
+        bool checkInId,
+        bool symptomFeverRefs,
+        bool symptomPainRefs,
+        bool symptomFatigueRefs,
+        bool symptomNauseaRefs,
+        bool symptomOtherRefs,
+      })
+    >;
+typedef $$SymptomFeverTableCreateCompanionBuilder =
+    SymptomFeverCompanion Function({
+      required String symptomId,
+      Value<double?> temperature,
+      Value<String?> unit,
+      Value<String?> method,
+      Value<bool> skipped,
+      Value<int> rowid,
+    });
+typedef $$SymptomFeverTableUpdateCompanionBuilder =
+    SymptomFeverCompanion Function({
+      Value<String> symptomId,
+      Value<double?> temperature,
+      Value<String?> unit,
+      Value<String?> method,
+      Value<bool> skipped,
+      Value<int> rowid,
+    });
+
+final class $$SymptomFeverTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $SymptomFeverTable, SymptomFeverData> {
+  $$SymptomFeverTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CheckInSymptomsTable _symptomIdTable(_$AppDatabase db) =>
+      db.checkInSymptoms.createAlias(
+        $_aliasNameGenerator(db.symptomFever.symptomId, db.checkInSymptoms.id),
+      );
+
+  $$CheckInSymptomsTableProcessedTableManager get symptomId {
+    final $_column = $_itemColumn<String>('symptom_id')!;
+
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symptomIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SymptomFeverTableFilterComposer
+    extends Composer<_$AppDatabase, $SymptomFeverTable> {
+  $$SymptomFeverTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<double> get temperature => $composableBuilder(
+    column: $table.temperature,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get skipped => $composableBuilder(
+    column: $table.skipped,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInSymptomsTableFilterComposer get symptomId {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFeverTableOrderingComposer
+    extends Composer<_$AppDatabase, $SymptomFeverTable> {
+  $$SymptomFeverTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<double> get temperature => $composableBuilder(
+    column: $table.temperature,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get skipped => $composableBuilder(
+    column: $table.skipped,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInSymptomsTableOrderingComposer get symptomId {
+    final $$CheckInSymptomsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFeverTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SymptomFeverTable> {
+  $$SymptomFeverTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<double> get temperature => $composableBuilder(
+    column: $table.temperature,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
+
+  GeneratedColumn<bool> get skipped =>
+      $composableBuilder(column: $table.skipped, builder: (column) => column);
+
+  $$CheckInSymptomsTableAnnotationComposer get symptomId {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFeverTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SymptomFeverTable,
+          SymptomFeverData,
+          $$SymptomFeverTableFilterComposer,
+          $$SymptomFeverTableOrderingComposer,
+          $$SymptomFeverTableAnnotationComposer,
+          $$SymptomFeverTableCreateCompanionBuilder,
+          $$SymptomFeverTableUpdateCompanionBuilder,
+          (SymptomFeverData, $$SymptomFeverTableReferences),
+          SymptomFeverData,
+          PrefetchHooks Function({bool symptomId})
+        > {
+  $$SymptomFeverTableTableManager(_$AppDatabase db, $SymptomFeverTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SymptomFeverTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SymptomFeverTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SymptomFeverTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symptomId = const Value.absent(),
+                Value<double?> temperature = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<bool> skipped = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomFeverCompanion(
+                symptomId: symptomId,
+                temperature: temperature,
+                unit: unit,
+                method: method,
+                skipped: skipped,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symptomId,
+                Value<double?> temperature = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<bool> skipped = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomFeverCompanion.insert(
+                symptomId: symptomId,
+                temperature: temperature,
+                unit: unit,
+                method: method,
+                skipped: skipped,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SymptomFeverTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symptomId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symptomId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symptomId,
+                                referencedTable: $$SymptomFeverTableReferences
+                                    ._symptomIdTable(db),
+                                referencedColumn: $$SymptomFeverTableReferences
+                                    ._symptomIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SymptomFeverTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SymptomFeverTable,
+      SymptomFeverData,
+      $$SymptomFeverTableFilterComposer,
+      $$SymptomFeverTableOrderingComposer,
+      $$SymptomFeverTableAnnotationComposer,
+      $$SymptomFeverTableCreateCompanionBuilder,
+      $$SymptomFeverTableUpdateCompanionBuilder,
+      (SymptomFeverData, $$SymptomFeverTableReferences),
+      SymptomFeverData,
+      PrefetchHooks Function({bool symptomId})
+    >;
+typedef $$SymptomPainTableCreateCompanionBuilder =
+    SymptomPainCompanion Function({
+      required String symptomId,
+      required String regionsJson,
+      required String type,
+      Value<String?> triggersJson,
+      Value<int> rowid,
+    });
+typedef $$SymptomPainTableUpdateCompanionBuilder =
+    SymptomPainCompanion Function({
+      Value<String> symptomId,
+      Value<String> regionsJson,
+      Value<String> type,
+      Value<String?> triggersJson,
+      Value<int> rowid,
+    });
+
+final class $$SymptomPainTableReferences
+    extends BaseReferences<_$AppDatabase, $SymptomPainTable, SymptomPainData> {
+  $$SymptomPainTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CheckInSymptomsTable _symptomIdTable(_$AppDatabase db) =>
+      db.checkInSymptoms.createAlias(
+        $_aliasNameGenerator(db.symptomPain.symptomId, db.checkInSymptoms.id),
+      );
+
+  $$CheckInSymptomsTableProcessedTableManager get symptomId {
+    final $_column = $_itemColumn<String>('symptom_id')!;
+
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symptomIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SymptomPainTableFilterComposer
+    extends Composer<_$AppDatabase, $SymptomPainTable> {
+  $$SymptomPainTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get regionsJson => $composableBuilder(
+    column: $table.regionsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get triggersJson => $composableBuilder(
+    column: $table.triggersJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInSymptomsTableFilterComposer get symptomId {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomPainTableOrderingComposer
+    extends Composer<_$AppDatabase, $SymptomPainTable> {
+  $$SymptomPainTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get regionsJson => $composableBuilder(
+    column: $table.regionsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get triggersJson => $composableBuilder(
+    column: $table.triggersJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInSymptomsTableOrderingComposer get symptomId {
+    final $$CheckInSymptomsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomPainTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SymptomPainTable> {
+  $$SymptomPainTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get regionsJson => $composableBuilder(
+    column: $table.regionsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get triggersJson => $composableBuilder(
+    column: $table.triggersJson,
+    builder: (column) => column,
+  );
+
+  $$CheckInSymptomsTableAnnotationComposer get symptomId {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomPainTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SymptomPainTable,
+          SymptomPainData,
+          $$SymptomPainTableFilterComposer,
+          $$SymptomPainTableOrderingComposer,
+          $$SymptomPainTableAnnotationComposer,
+          $$SymptomPainTableCreateCompanionBuilder,
+          $$SymptomPainTableUpdateCompanionBuilder,
+          (SymptomPainData, $$SymptomPainTableReferences),
+          SymptomPainData,
+          PrefetchHooks Function({bool symptomId})
+        > {
+  $$SymptomPainTableTableManager(_$AppDatabase db, $SymptomPainTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SymptomPainTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SymptomPainTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SymptomPainTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symptomId = const Value.absent(),
+                Value<String> regionsJson = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> triggersJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomPainCompanion(
+                symptomId: symptomId,
+                regionsJson: regionsJson,
+                type: type,
+                triggersJson: triggersJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symptomId,
+                required String regionsJson,
+                required String type,
+                Value<String?> triggersJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomPainCompanion.insert(
+                symptomId: symptomId,
+                regionsJson: regionsJson,
+                type: type,
+                triggersJson: triggersJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SymptomPainTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symptomId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symptomId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symptomId,
+                                referencedTable: $$SymptomPainTableReferences
+                                    ._symptomIdTable(db),
+                                referencedColumn: $$SymptomPainTableReferences
+                                    ._symptomIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SymptomPainTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SymptomPainTable,
+      SymptomPainData,
+      $$SymptomPainTableFilterComposer,
+      $$SymptomPainTableOrderingComposer,
+      $$SymptomPainTableAnnotationComposer,
+      $$SymptomPainTableCreateCompanionBuilder,
+      $$SymptomPainTableUpdateCompanionBuilder,
+      (SymptomPainData, $$SymptomPainTableReferences),
+      SymptomPainData,
+      PrefetchHooks Function({bool symptomId})
+    >;
+typedef $$SymptomFatigueTableCreateCompanionBuilder =
+    SymptomFatigueCompanion Function({
+      required String symptomId,
+      required String scope,
+      required bool blocksDaily,
+      Value<int> rowid,
+    });
+typedef $$SymptomFatigueTableUpdateCompanionBuilder =
+    SymptomFatigueCompanion Function({
+      Value<String> symptomId,
+      Value<String> scope,
+      Value<bool> blocksDaily,
+      Value<int> rowid,
+    });
+
+final class $$SymptomFatigueTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SymptomFatigueTable,
+          SymptomFatigueData
+        > {
+  $$SymptomFatigueTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CheckInSymptomsTable _symptomIdTable(_$AppDatabase db) =>
+      db.checkInSymptoms.createAlias(
+        $_aliasNameGenerator(
+          db.symptomFatigue.symptomId,
+          db.checkInSymptoms.id,
+        ),
+      );
+
+  $$CheckInSymptomsTableProcessedTableManager get symptomId {
+    final $_column = $_itemColumn<String>('symptom_id')!;
+
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symptomIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SymptomFatigueTableFilterComposer
+    extends Composer<_$AppDatabase, $SymptomFatigueTable> {
+  $$SymptomFatigueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get blocksDaily => $composableBuilder(
+    column: $table.blocksDaily,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInSymptomsTableFilterComposer get symptomId {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFatigueTableOrderingComposer
+    extends Composer<_$AppDatabase, $SymptomFatigueTable> {
+  $$SymptomFatigueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get blocksDaily => $composableBuilder(
+    column: $table.blocksDaily,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInSymptomsTableOrderingComposer get symptomId {
+    final $$CheckInSymptomsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFatigueTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SymptomFatigueTable> {
+  $$SymptomFatigueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get scope =>
+      $composableBuilder(column: $table.scope, builder: (column) => column);
+
+  GeneratedColumn<bool> get blocksDaily => $composableBuilder(
+    column: $table.blocksDaily,
+    builder: (column) => column,
+  );
+
+  $$CheckInSymptomsTableAnnotationComposer get symptomId {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomFatigueTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SymptomFatigueTable,
+          SymptomFatigueData,
+          $$SymptomFatigueTableFilterComposer,
+          $$SymptomFatigueTableOrderingComposer,
+          $$SymptomFatigueTableAnnotationComposer,
+          $$SymptomFatigueTableCreateCompanionBuilder,
+          $$SymptomFatigueTableUpdateCompanionBuilder,
+          (SymptomFatigueData, $$SymptomFatigueTableReferences),
+          SymptomFatigueData,
+          PrefetchHooks Function({bool symptomId})
+        > {
+  $$SymptomFatigueTableTableManager(
+    _$AppDatabase db,
+    $SymptomFatigueTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SymptomFatigueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SymptomFatigueTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SymptomFatigueTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symptomId = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<bool> blocksDaily = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomFatigueCompanion(
+                symptomId: symptomId,
+                scope: scope,
+                blocksDaily: blocksDaily,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symptomId,
+                required String scope,
+                required bool blocksDaily,
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomFatigueCompanion.insert(
+                symptomId: symptomId,
+                scope: scope,
+                blocksDaily: blocksDaily,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SymptomFatigueTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symptomId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symptomId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symptomId,
+                                referencedTable: $$SymptomFatigueTableReferences
+                                    ._symptomIdTable(db),
+                                referencedColumn:
+                                    $$SymptomFatigueTableReferences
+                                        ._symptomIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SymptomFatigueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SymptomFatigueTable,
+      SymptomFatigueData,
+      $$SymptomFatigueTableFilterComposer,
+      $$SymptomFatigueTableOrderingComposer,
+      $$SymptomFatigueTableAnnotationComposer,
+      $$SymptomFatigueTableCreateCompanionBuilder,
+      $$SymptomFatigueTableUpdateCompanionBuilder,
+      (SymptomFatigueData, $$SymptomFatigueTableReferences),
+      SymptomFatigueData,
+      PrefetchHooks Function({bool symptomId})
+    >;
+typedef $$SymptomNauseaTableCreateCompanionBuilder =
+    SymptomNauseaCompanion Function({
+      required String symptomId,
+      required bool vomiting,
+      Value<String?> vomitFreq,
+      required String appetite,
+      Value<String?> dehydrationSignsJson,
+      Value<int> rowid,
+    });
+typedef $$SymptomNauseaTableUpdateCompanionBuilder =
+    SymptomNauseaCompanion Function({
+      Value<String> symptomId,
+      Value<bool> vomiting,
+      Value<String?> vomitFreq,
+      Value<String> appetite,
+      Value<String?> dehydrationSignsJson,
+      Value<int> rowid,
+    });
+
+final class $$SymptomNauseaTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $SymptomNauseaTable, SymptomNauseaData> {
+  $$SymptomNauseaTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CheckInSymptomsTable _symptomIdTable(_$AppDatabase db) =>
+      db.checkInSymptoms.createAlias(
+        $_aliasNameGenerator(db.symptomNausea.symptomId, db.checkInSymptoms.id),
+      );
+
+  $$CheckInSymptomsTableProcessedTableManager get symptomId {
+    final $_column = $_itemColumn<String>('symptom_id')!;
+
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symptomIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SymptomNauseaTableFilterComposer
+    extends Composer<_$AppDatabase, $SymptomNauseaTable> {
+  $$SymptomNauseaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<bool> get vomiting => $composableBuilder(
+    column: $table.vomiting,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vomitFreq => $composableBuilder(
+    column: $table.vomitFreq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appetite => $composableBuilder(
+    column: $table.appetite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dehydrationSignsJson => $composableBuilder(
+    column: $table.dehydrationSignsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInSymptomsTableFilterComposer get symptomId {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomNauseaTableOrderingComposer
+    extends Composer<_$AppDatabase, $SymptomNauseaTable> {
+  $$SymptomNauseaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<bool> get vomiting => $composableBuilder(
+    column: $table.vomiting,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vomitFreq => $composableBuilder(
+    column: $table.vomitFreq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appetite => $composableBuilder(
+    column: $table.appetite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dehydrationSignsJson => $composableBuilder(
+    column: $table.dehydrationSignsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInSymptomsTableOrderingComposer get symptomId {
+    final $$CheckInSymptomsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomNauseaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SymptomNauseaTable> {
+  $$SymptomNauseaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<bool> get vomiting =>
+      $composableBuilder(column: $table.vomiting, builder: (column) => column);
+
+  GeneratedColumn<String> get vomitFreq =>
+      $composableBuilder(column: $table.vomitFreq, builder: (column) => column);
+
+  GeneratedColumn<String> get appetite =>
+      $composableBuilder(column: $table.appetite, builder: (column) => column);
+
+  GeneratedColumn<String> get dehydrationSignsJson => $composableBuilder(
+    column: $table.dehydrationSignsJson,
+    builder: (column) => column,
+  );
+
+  $$CheckInSymptomsTableAnnotationComposer get symptomId {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomNauseaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SymptomNauseaTable,
+          SymptomNauseaData,
+          $$SymptomNauseaTableFilterComposer,
+          $$SymptomNauseaTableOrderingComposer,
+          $$SymptomNauseaTableAnnotationComposer,
+          $$SymptomNauseaTableCreateCompanionBuilder,
+          $$SymptomNauseaTableUpdateCompanionBuilder,
+          (SymptomNauseaData, $$SymptomNauseaTableReferences),
+          SymptomNauseaData,
+          PrefetchHooks Function({bool symptomId})
+        > {
+  $$SymptomNauseaTableTableManager(_$AppDatabase db, $SymptomNauseaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SymptomNauseaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SymptomNauseaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SymptomNauseaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symptomId = const Value.absent(),
+                Value<bool> vomiting = const Value.absent(),
+                Value<String?> vomitFreq = const Value.absent(),
+                Value<String> appetite = const Value.absent(),
+                Value<String?> dehydrationSignsJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomNauseaCompanion(
+                symptomId: symptomId,
+                vomiting: vomiting,
+                vomitFreq: vomitFreq,
+                appetite: appetite,
+                dehydrationSignsJson: dehydrationSignsJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symptomId,
+                required bool vomiting,
+                Value<String?> vomitFreq = const Value.absent(),
+                required String appetite,
+                Value<String?> dehydrationSignsJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomNauseaCompanion.insert(
+                symptomId: symptomId,
+                vomiting: vomiting,
+                vomitFreq: vomitFreq,
+                appetite: appetite,
+                dehydrationSignsJson: dehydrationSignsJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SymptomNauseaTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symptomId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symptomId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symptomId,
+                                referencedTable: $$SymptomNauseaTableReferences
+                                    ._symptomIdTable(db),
+                                referencedColumn: $$SymptomNauseaTableReferences
+                                    ._symptomIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SymptomNauseaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SymptomNauseaTable,
+      SymptomNauseaData,
+      $$SymptomNauseaTableFilterComposer,
+      $$SymptomNauseaTableOrderingComposer,
+      $$SymptomNauseaTableAnnotationComposer,
+      $$SymptomNauseaTableCreateCompanionBuilder,
+      $$SymptomNauseaTableUpdateCompanionBuilder,
+      (SymptomNauseaData, $$SymptomNauseaTableReferences),
+      SymptomNauseaData,
+      PrefetchHooks Function({bool symptomId})
+    >;
+typedef $$SymptomOtherTableCreateCompanionBuilder =
+    SymptomOtherCompanion Function({
+      required String symptomId,
+      required String freeText,
+      Value<String?> extractedDetailsJson,
+      Value<int> rowid,
+    });
+typedef $$SymptomOtherTableUpdateCompanionBuilder =
+    SymptomOtherCompanion Function({
+      Value<String> symptomId,
+      Value<String> freeText,
+      Value<String?> extractedDetailsJson,
+      Value<int> rowid,
+    });
+
+final class $$SymptomOtherTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $SymptomOtherTable, SymptomOtherData> {
+  $$SymptomOtherTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CheckInSymptomsTable _symptomIdTable(_$AppDatabase db) =>
+      db.checkInSymptoms.createAlias(
+        $_aliasNameGenerator(db.symptomOther.symptomId, db.checkInSymptoms.id),
+      );
+
+  $$CheckInSymptomsTableProcessedTableManager get symptomId {
+    final $_column = $_itemColumn<String>('symptom_id')!;
+
+    final manager = $$CheckInSymptomsTableTableManager(
+      $_db,
+      $_db.checkInSymptoms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symptomIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SymptomOtherTableFilterComposer
+    extends Composer<_$AppDatabase, $SymptomOtherTable> {
+  $$SymptomOtherTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get freeText => $composableBuilder(
+    column: $table.freeText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extractedDetailsJson => $composableBuilder(
+    column: $table.extractedDetailsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInSymptomsTableFilterComposer get symptomId {
+    final $$CheckInSymptomsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomOtherTableOrderingComposer
+    extends Composer<_$AppDatabase, $SymptomOtherTable> {
+  $$SymptomOtherTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get freeText => $composableBuilder(
+    column: $table.freeText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get extractedDetailsJson => $composableBuilder(
+    column: $table.extractedDetailsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInSymptomsTableOrderingComposer get symptomId {
+    final $$CheckInSymptomsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomOtherTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SymptomOtherTable> {
+  $$SymptomOtherTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get freeText =>
+      $composableBuilder(column: $table.freeText, builder: (column) => column);
+
+  GeneratedColumn<String> get extractedDetailsJson => $composableBuilder(
+    column: $table.extractedDetailsJson,
+    builder: (column) => column,
+  );
+
+  $$CheckInSymptomsTableAnnotationComposer get symptomId {
+    final $$CheckInSymptomsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symptomId,
+      referencedTable: $db.checkInSymptoms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInSymptomsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkInSymptoms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SymptomOtherTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SymptomOtherTable,
+          SymptomOtherData,
+          $$SymptomOtherTableFilterComposer,
+          $$SymptomOtherTableOrderingComposer,
+          $$SymptomOtherTableAnnotationComposer,
+          $$SymptomOtherTableCreateCompanionBuilder,
+          $$SymptomOtherTableUpdateCompanionBuilder,
+          (SymptomOtherData, $$SymptomOtherTableReferences),
+          SymptomOtherData,
+          PrefetchHooks Function({bool symptomId})
+        > {
+  $$SymptomOtherTableTableManager(_$AppDatabase db, $SymptomOtherTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SymptomOtherTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SymptomOtherTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SymptomOtherTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symptomId = const Value.absent(),
+                Value<String> freeText = const Value.absent(),
+                Value<String?> extractedDetailsJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomOtherCompanion(
+                symptomId: symptomId,
+                freeText: freeText,
+                extractedDetailsJson: extractedDetailsJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symptomId,
+                required String freeText,
+                Value<String?> extractedDetailsJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SymptomOtherCompanion.insert(
+                symptomId: symptomId,
+                freeText: freeText,
+                extractedDetailsJson: extractedDetailsJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SymptomOtherTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symptomId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symptomId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symptomId,
+                                referencedTable: $$SymptomOtherTableReferences
+                                    ._symptomIdTable(db),
+                                referencedColumn: $$SymptomOtherTableReferences
+                                    ._symptomIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SymptomOtherTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SymptomOtherTable,
+      SymptomOtherData,
+      $$SymptomOtherTableFilterComposer,
+      $$SymptomOtherTableOrderingComposer,
+      $$SymptomOtherTableAnnotationComposer,
+      $$SymptomOtherTableCreateCompanionBuilder,
+      $$SymptomOtherTableUpdateCompanionBuilder,
+      (SymptomOtherData, $$SymptomOtherTableReferences),
+      SymptomOtherData,
+      PrefetchHooks Function({bool symptomId})
+    >;
+typedef $$CheckInSubjectiveTableCreateCompanionBuilder =
+    CheckInSubjectiveCompanion Function({
+      required String checkInId,
+      Value<String?> freeNotes,
+      Value<String?> slmTagsJson,
+      Value<String?> followUpExchangesJson,
+      Value<int> rowid,
+    });
+typedef $$CheckInSubjectiveTableUpdateCompanionBuilder =
+    CheckInSubjectiveCompanion Function({
+      Value<String> checkInId,
+      Value<String?> freeNotes,
+      Value<String?> slmTagsJson,
+      Value<String?> followUpExchangesJson,
+      Value<int> rowid,
+    });
+
+final class $$CheckInSubjectiveTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CheckInSubjectiveTable,
+          CheckInSubjectiveData
+        > {
+  $$CheckInSubjectiveTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CheckInsTable _checkInIdTable(_$AppDatabase db) =>
+      db.checkIns.createAlias(
+        $_aliasNameGenerator(db.checkInSubjective.checkInId, db.checkIns.id),
+      );
+
+  $$CheckInsTableProcessedTableManager get checkInId {
+    final $_column = $_itemColumn<String>('check_in_id')!;
+
+    final manager = $$CheckInsTableTableManager(
+      $_db,
+      $_db.checkIns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_checkInIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CheckInSubjectiveTableFilterComposer
+    extends Composer<_$AppDatabase, $CheckInSubjectiveTable> {
+  $$CheckInSubjectiveTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get freeNotes => $composableBuilder(
+    column: $table.freeNotes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CheckInsTableFilterComposer get checkInId {
+    final $$CheckInsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableFilterComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CheckInSubjectiveTableOrderingComposer
+    extends Composer<_$AppDatabase, $CheckInSubjectiveTable> {
+  $$CheckInSubjectiveTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get freeNotes => $composableBuilder(
+    column: $table.freeNotes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CheckInsTableOrderingComposer get checkInId {
+    final $$CheckInsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableOrderingComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CheckInSubjectiveTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CheckInSubjectiveTable> {
+  $$CheckInSubjectiveTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get freeNotes =>
+      $composableBuilder(column: $table.freeNotes, builder: (column) => column);
+
+  GeneratedColumn<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
+    builder: (column) => column,
+  );
+
+  $$CheckInsTableAnnotationComposer get checkInId {
+    final $$CheckInsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.checkInId,
+      referencedTable: $db.checkIns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CheckInsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checkIns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CheckInSubjectiveTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CheckInSubjectiveTable,
+          CheckInSubjectiveData,
+          $$CheckInSubjectiveTableFilterComposer,
+          $$CheckInSubjectiveTableOrderingComposer,
+          $$CheckInSubjectiveTableAnnotationComposer,
+          $$CheckInSubjectiveTableCreateCompanionBuilder,
+          $$CheckInSubjectiveTableUpdateCompanionBuilder,
+          (CheckInSubjectiveData, $$CheckInSubjectiveTableReferences),
+          CheckInSubjectiveData,
+          PrefetchHooks Function({bool checkInId})
+        > {
+  $$CheckInSubjectiveTableTableManager(
+    _$AppDatabase db,
+    $CheckInSubjectiveTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CheckInSubjectiveTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CheckInSubjectiveTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CheckInSubjectiveTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> checkInId = const Value.absent(),
+                Value<String?> freeNotes = const Value.absent(),
+                Value<String?> slmTagsJson = const Value.absent(),
+                Value<String?> followUpExchangesJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CheckInSubjectiveCompanion(
+                checkInId: checkInId,
+                freeNotes: freeNotes,
+                slmTagsJson: slmTagsJson,
+                followUpExchangesJson: followUpExchangesJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String checkInId,
+                Value<String?> freeNotes = const Value.absent(),
+                Value<String?> slmTagsJson = const Value.absent(),
+                Value<String?> followUpExchangesJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CheckInSubjectiveCompanion.insert(
+                checkInId: checkInId,
+                freeNotes: freeNotes,
+                slmTagsJson: slmTagsJson,
+                followUpExchangesJson: followUpExchangesJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CheckInSubjectiveTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({checkInId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (checkInId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.checkInId,
+                                referencedTable:
+                                    $$CheckInSubjectiveTableReferences
+                                        ._checkInIdTable(db),
+                                referencedColumn:
+                                    $$CheckInSubjectiveTableReferences
+                                        ._checkInIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CheckInSubjectiveTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CheckInSubjectiveTable,
+      CheckInSubjectiveData,
+      $$CheckInSubjectiveTableFilterComposer,
+      $$CheckInSubjectiveTableOrderingComposer,
+      $$CheckInSubjectiveTableAnnotationComposer,
+      $$CheckInSubjectiveTableCreateCompanionBuilder,
+      $$CheckInSubjectiveTableUpdateCompanionBuilder,
+      (CheckInSubjectiveData, $$CheckInSubjectiveTableReferences),
+      CheckInSubjectiveData,
+      PrefetchHooks Function({bool checkInId})
     >;
 typedef $$PetStateTableTableCreateCompanionBuilder =
     PetStateTableCompanion Function({
@@ -4369,6 +9592,20 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$CheckInsTableTableManager get checkIns =>
       $$CheckInsTableTableManager(_db, _db.checkIns);
+  $$CheckInSymptomsTableTableManager get checkInSymptoms =>
+      $$CheckInSymptomsTableTableManager(_db, _db.checkInSymptoms);
+  $$SymptomFeverTableTableManager get symptomFever =>
+      $$SymptomFeverTableTableManager(_db, _db.symptomFever);
+  $$SymptomPainTableTableManager get symptomPain =>
+      $$SymptomPainTableTableManager(_db, _db.symptomPain);
+  $$SymptomFatigueTableTableManager get symptomFatigue =>
+      $$SymptomFatigueTableTableManager(_db, _db.symptomFatigue);
+  $$SymptomNauseaTableTableManager get symptomNausea =>
+      $$SymptomNauseaTableTableManager(_db, _db.symptomNausea);
+  $$SymptomOtherTableTableManager get symptomOther =>
+      $$SymptomOtherTableTableManager(_db, _db.symptomOther);
+  $$CheckInSubjectiveTableTableManager get checkInSubjective =>
+      $$CheckInSubjectiveTableTableManager(_db, _db.checkInSubjective);
   $$PetStateTableTableTableManager get petStateTable =>
       $$PetStateTableTableTableManager(_db, _db.petStateTable);
   $$BaselineStatsTableTableManager get baselineStats =>

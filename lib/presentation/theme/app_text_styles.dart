@@ -25,6 +25,13 @@ abstract final class AppTextStyles {
     height: 1.29,
   );
 
+  static const headlineSmall = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+    height: 1.33,
+  );
+
   static const titleLarge = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w500,
@@ -52,5 +59,13 @@ abstract final class AppTextStyles {
     color: AppColors.textPrimary,
     height: 1.43,
     letterSpacing: 0.1,
+  );
+
+  static const labelSmall = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textTertiary,
+    height: 1.45,
+    letterSpacing: 0.5,
   );
 }

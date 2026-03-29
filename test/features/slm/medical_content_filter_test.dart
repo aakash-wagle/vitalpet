@@ -16,6 +16,20 @@ void main() {
       expect(result.safe, isFalse);
     });
 
+    test('blocked phrase returns safeFallback text', () {
+      final result = filter.filter('I can diagnose your condition');
+      expect(result.text, equals(MedicalContentFilter.safeFallback));
+    });
+
+    test('safeFallback is the expected constant string', () {
+      expect(
+        MedicalContentFilter.safeFallback,
+        equals(
+          "I'm here to help you remember — please speak to your doctor.",
+        ),
+      );
+    });
+
     test('safe content passes through unchanged', () {
       const safe = 'How did you sleep last night?';
       final result = filter.filter(safe);
@@ -32,6 +46,17 @@ void main() {
       final result = filter.filter('take this medication');
       expect(result.text, isNotEmpty);
       expect(result.text.toLowerCase(), isNot(contains('medication')));
+    });
+
+    test('empty string is safe', () {
+      final result = filter.filter('');
+      expect(result.safe, isTrue);
+      expect(result.text, isEmpty);
+    });
+
+    test('multiple patterns — first match returns false', () {
+      final result = filter.filter('here is a prescription for you');
+      expect(result.safe, isFalse);
     });
   });
 }

@@ -42,7 +42,7 @@ class CheckInEngine {
   }
 
   /// Amends a same-day completed check-in.
-  Future<void> amendSession(int checkInId, List<QuestionAnswer> updates) async {
+  Future<void> amendSession(String checkInId, List<QuestionAnswer> updates) async {
     // TODO: implement — AMENDMENT audit event
   }
 }

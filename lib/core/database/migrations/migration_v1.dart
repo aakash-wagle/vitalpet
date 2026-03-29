@@ -3,8 +3,15 @@ import 'package:vitalpet/core/database/app_database.dart';
 
 /// Schema version 1 — initial database creation.
 ///
-/// Creates all six tables defined in [AppDatabase]:
+/// Creates all thirteen tables defined in [AppDatabase]:
 /// - check_ins
+/// - check_in_symptoms
+/// - symptom_fever
+/// - symptom_pain
+/// - symptom_fatigue
+/// - symptom_nausea
+/// - symptom_other
+/// - check_in_subjective
 /// - pet_state_table
 /// - baseline_stats
 /// - audit_log

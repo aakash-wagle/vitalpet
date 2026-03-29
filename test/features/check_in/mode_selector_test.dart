@@ -3,28 +3,28 @@ import 'package:vitalpet/features/check_in/domain/mode_selector.dart';
 
 void main() {
   group('selectMode', () {
-    test('score 3 → companion', () {
-      expect(selectMode(3), CheckInMode.companion);
-    });
-
-    test('score 4 → standard', () {
-      expect(selectMode(4), CheckInMode.standard);
-    });
-
-    test('score 6 → standard', () {
-      expect(selectMode(6), CheckInMode.standard);
-    });
-
-    test('score 7 → light', () {
-      expect(selectMode(7), CheckInMode.light);
-    });
-
-    test('score 1 → companion (boundary)', () {
+    test('score 1 → companion (lower bound)', () {
       expect(selectMode(1), CheckInMode.companion);
     });
 
-    test('score 10 → light (boundary)', () {
-      expect(selectMode(10), CheckInMode.light);
+    test('score 3 → companion (upper boundary)', () {
+      expect(selectMode(3), CheckInMode.companion);
+    });
+
+    test('score 4 → guided (lower boundary)', () {
+      expect(selectMode(4), CheckInMode.guided);
+    });
+
+    test('score 6 → guided (upper boundary)', () {
+      expect(selectMode(6), CheckInMode.guided);
+    });
+
+    test('score 7 → quick (lower boundary)', () {
+      expect(selectMode(7), CheckInMode.quick);
+    });
+
+    test('score 10 → quick (upper bound)', () {
+      expect(selectMode(10), CheckInMode.quick);
     });
   });
 }

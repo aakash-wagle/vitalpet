@@ -1,19 +1,17 @@
-/// Symptom domains loaded at runtime from assets/config/symptom_taxonomy.json.
-/// Keep in sync with that file — do not hardcode domain strings elsewhere.
-enum SymptomDomain {
+/// Symptom categories for structured check-in data.
+/// Matches the category column in check_in_symptoms and assets/config/symptom_taxonomy.json.
+/// Values: fever | pain | fatigue | nausea | other — per DATA_TO_COLLECT.md.
+enum SymptomCategory {
+  fever,
   pain,
   fatigue,
-  sleep,
-  appetite,
   nausea,
-  mood,
-  cognitive,
-  medication;
+  other;
 
-  static SymptomDomain fromString(String value) {
-    return SymptomDomain.values.firstWhere(
-      (d) => d.name == value,
-      orElse: () => throw ArgumentError('Unknown domain: $value'),
+  static SymptomCategory fromString(String value) {
+    return SymptomCategory.values.firstWhere(
+      (c) => c.name == value,
+      orElse: () => throw ArgumentError('Unknown category: $value'),
     );
   }
 }

@@ -31,7 +31,7 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     // TODO: implement
   }
 
-  Future<void> amendSession(int checkInId, List<QuestionAnswer> updates) async {
+  Future<void> amendSession(String checkInId, List<QuestionAnswer> updates) async {
     // TODO: implement
   }
 }

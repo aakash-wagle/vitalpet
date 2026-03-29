@@ -1,3 +1,7 @@
 {
-  "default": ["pain", "fatigue", "sleep", "appetite", "mood"]
+  "default": ["pain", "fatigue", "fever", "nausea", "other"],
+  "chronic_pain": ["pain", "fatigue", "nausea", "fever", "other"],
+  "post_surgery": ["pain", "fever", "fatigue", "nausea", "other"],
+  "gi_condition": ["nausea", "pain", "fatigue", "fever", "other"],
+  "respiratory": ["fever", "fatigue", "pain", "nausea", "other"]
 }

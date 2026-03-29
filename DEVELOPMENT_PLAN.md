@@ -36,7 +36,7 @@ PREREQUISITE CHECK — do this before anything else:
    flutter_local_notifications: ^18.0.0, home_widget: ^0.5.0,
    flutter_secure_storage: ^9.2.0, freezed_annotation: ^2.4.0,
    json_annotation: ^4.9.0, flutter_svg: ^2.0.0, crypto: ^3.0.0,
-   intl: ^0.19.0
+   intl: ^0.19.0, connectivity_plus: ^6.0.0
    dev: build_runner, riverpod_generator, freezed, drift_dev, json_serializable, mocktail
 
 2. Create analysis_options.yaml with strict linting (include: package:flutter_lints/flutter.yaml, prefer_final_locals, avoid_print).
@@ -45,9 +45,35 @@ PREREQUISITE CHECK — do this before anything else:
 
 4. Create every directory and empty .dart stub file listed in REPO_STRUCTURE.md. Each stub should have the correct import statements and an empty class or function signature matching the description, but no implementation body.
 
-5. Create assets/config/slm_prompt.txt with a one-line placeholder: "You are a symptom-tracking assistant."
-6. Create assets/config/symptom_taxonomy.json as {"domains":["pain","fatigue","sleep","appetite","nausea","mood","cognitive","medication"]}
-7. Create assets/config/cold_start_rules.json as {"default":["pain","fatigue","sleep","appetite","mood"]}
+5. Create assets/config/slm_prompt.txt with this exact content:
+   "You are a symptom-tracking assistant. The user has reported feeling unwell (overall_status = not_great).
+   Ask structured follow-up questions to capture one or more symptoms from these categories: fever, pain, fatigue, nausea, other.
+   For each symptom, capture the fields defined in DATA_TO_COLLECT.md.
+   Output ONLY valid JSON. Do not diagnose. Do not recommend medication."
+
+6. Create assets/config/symptom_taxonomy.json with this content:
+   {
+     "categories": ["fever", "pain", "fatigue", "nausea", "other"],
+     "fever_patterns": ["constant", "intermittent", "night_only"],
+     "pain_types": ["sharp", "dull", "throbbing", "burning", "cramping", "aching"],
+     "pain_patterns": ["constant", "comes_and_goes", "worsening", "improving"],
+     "pain_triggers": ["movement", "eating", "breathing", "touch", "none"],
+     "fatigue_scope": ["functional", "wiped_out", "debilitating"],
+     "fatigue_patterns": ["morning_only", "afternoon_crash", "all_day", "post_exertion"],
+     "nausea_patterns": ["constant", "after_eating", "morning", "wave_like"],
+     "dehydration_signs": ["dry_mouth", "dark_urine", "dizziness"],
+     "body_regions": ["head", "chest", "abdomen", "upper_limb_l", "upper_limb_r", "lower_limb_l", "lower_limb_r", "back"]
+   }
+
+7. Create assets/config/cold_start_rules.json with this content:
+   {
+     "default": ["pain", "fatigue", "fever", "nausea"],
+     "chronic_pain": ["pain", "fatigue", "fever", "nausea"],
+     "post_surgery": ["pain", "fever", "fatigue", "nausea"],
+     "mental_health": ["fatigue", "nausea", "pain", "fever"],
+     "general_wellness": ["pain", "fatigue", "fever", "nausea"]
+   }
+
 8. Create assets/config/medical_filter_patterns.json as {"patterns":["diagnose","you have","prescription","take this"]}
 9. Create demo/seed_data.json as an empty array: []
 10. Create test/helpers/test_database.dart as an empty stub.
@@ -55,6 +81,7 @@ PREREQUISITE CHECK — do this before anything else:
 
 After creating all files, run: flutter pub get
 Report which files were created and the result of flutter pub get.
+
 ```
 
 ---
@@ -114,258 +141,372 @@ dart run build_runner build --delete-conflicting-outputs
 
 Then run: flutter analyze --no-pub
 Fix any errors. Report the final analyze result.
+
 ```
 
 ---
 
 ### Sprint 0.2b — Check-in schema rewrite
 
+**What gets built:** The `CheckIns` table and its flat `answersJson` field are replaced with a normalised symptom schema. New tables: `CheckInSymptoms`, `SymptomFever`, `SymptomPain`, `SymptomFatigue`, `SymptomNausea`, `SymptomOther`, `CheckInSubjective`. New DAO: `SymptomDao`.
+
+**Dependencies:** Sprint 0.2 complete (existing DB compiles but has no data).
+
+**Cursor prompt:**
+
+```
 We are building VitalPet. Sprint 0.2 (database scaffold) is complete but the
-`CheckIns` table is being replaced. There is no existing data — breaking changes
+CheckIns table is being replaced. There is no existing data — breaking changes
 are intentional. Rewrite the schema from scratch; do not preserve any fields
-from the current `CheckIns` table that are not listed below.
+from the current CheckIns table that are not listed below.
 
 Read before writing any code:
-- `REPO_STRUCTURE.md`
-- `lib/core/database/app_database.dart` (current schema — replace, do not extend)
+- REPO_STRUCTURE.md
+- lib/core/database/app_database.dart (current schema — replace, do not extend)
+- DATA_TO_COLLECT.md (authoritative source for all field names and enum values)
+
+Implement the following — data layer only. No domain logic, no UI, no Riverpod providers.
+
+1. Replace CheckIns table in app_database.dart.
+
+   Remove the current CheckIns definition entirely and replace with:
+
+   class CheckIns extends Table {
+     TextColumn get id => text()();
+     TextColumn get utcDate => text()();
+     TextColumn get localDate => text()();
+     IntColumn get wellnessScore => integer()();
+     // overall_status: 'great' | 'not_great' — derived from wellnessScore at query time,
+     // not stored as a separate column (score <=6 = not_great, >=7 = great)
+     IntColumn get mode => integer()();
+     RealColumn get depthScore => real().withDefault(const Constant(0.0))();
+     BoolColumn get isPartial => boolean().withDefault(const Constant(false))();
+     TextColumn get amendedAt => text().nullable()();
+     TextColumn get createdAt => text()();
+
+     @override
+     Set<Column> get primaryKey => {id};
+   }
+
+   Note: answersJson is removed entirely. Structured data lives in the tables below.
+
+2. Add new tables to app_database.dart.
+
+   CheckInSymptoms — one row per symptom per check-in session:
+   class CheckInSymptoms extends Table {
+     TextColumn get id => text()();
+     TextColumn get checkInId => text().references(CheckIns, #id)();
+     TextColumn get category => text()(); // 'fever'|'pain'|'fatigue'|'nausea'|'other'
+     IntColumn get onsetDay => integer().nullable()(); // computed from history after insert — never asked
+     TextColumn get pattern => text().nullable()(); // category-specific enum value as string
+
+     @override
+     Set<Column> get primaryKey => {id};
+   }
+
+   SymptomFever — one row per fever symptom, FK → CheckInSymptoms.id:
+   class SymptomFever extends Table {
+     TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+     RealColumn get temperature => real().nullable()();
+     TextColumn get unit => text().nullable()(); // 'C'|'F'
+     TextColumn get method => text().nullable()(); // 'oral'|'ear'|'forehead'|'other'
+     BoolColumn get skipped => boolean().withDefault(const Constant(false))();
+     // skipped=true means user has no thermometer — distinct from a null temperature
+
+     @override
+     Set<Column> get primaryKey => {symptomId};
+   }
+
+   SymptomPain — one row per pain symptom, FK → CheckInSymptoms.id:
+   class SymptomPain extends Table {
+     TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+     TextColumn get regionsJson => text()(); // JSON array of body_region strings
+     TextColumn get type => text()(); // 'sharp'|'dull'|'throbbing'|'burning'|'cramping'|'aching'
+     TextColumn get triggersJson => text().nullable()(); // JSON array: 'movement'|'eating'|'breathing'|'touch'|'none'
+
+     @override
+     Set<Column> get primaryKey => {symptomId};
+   }
+
+   SymptomFatigue — one row per fatigue symptom, FK → CheckInSymptoms.id:
+   class SymptomFatigue extends Table {
+     TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+     TextColumn get scope => text()(); // 'functional'|'wiped_out'|'debilitating'
+     BoolColumn get blocksDaily => boolean()();
+
+     @override
+     Set<Column> get primaryKey => {symptomId};
+   }
+
+   SymptomNausea — one row per nausea symptom, FK → CheckInSymptoms.id:
+   class SymptomNausea extends Table {
+     TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+     BoolColumn get vomiting => boolean()();
+     TextColumn get vomitFreq => text().nullable()(); // 'once'|'few_times'|'persistent' — null if vomiting=false
+     TextColumn get appetite => text()(); // 'normal'|'reduced'|'none'
+     TextColumn get dehydrationSignsJson => text().nullable()(); // JSON array: 'dry_mouth'|'dark_urine'|'dizziness'
+
+     @override
+     Set<Column> get primaryKey => {symptomId};
+   }
+
+   SymptomOther — one row per other symptom, FK → CheckInSymptoms.id:
+   class SymptomOther extends Table {
+     TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
+     TextColumn get freeText => text()(); // mandatory for this category
+     TextColumn get extractedDetailsJson => text().nullable()(); // best-effort SLM parse
+
+     @override
+     Set<Column> get primaryKey => {symptomId};
+   }
+
+   CheckInSubjective — one row per check-in, all fields optional, FK → CheckIns.id:
+   class CheckInSubjective extends Table {
+     TextColumn get checkInId => text().references(CheckIns, #id)();
+     TextColumn get freeNotes => text().nullable()();
+     TextColumn get slmTagsJson => text().nullable()(); // JSON array of keyword strings
+     TextColumn get followUpExchangesJson => text().nullable()();
+     // JSON array of { role: 'user'|'assistant', content: string, timestamp: ISO8601 }
+
+     @override
+     Set<Column> get primaryKey => {checkInId};
+   }
+
+3. Update the @DriftDatabase annotation to include all new tables:
+
+   @DriftDatabase(tables: [
+     CheckIns,
+     CheckInSymptoms,
+     SymptomFever,
+     SymptomPain,
+     SymptomFatigue,
+     SymptomNausea,
+     SymptomOther,
+     CheckInSubjective,
+     PetStateTable,
+     BaselineStats,
+     AuditLog,
+     SlmContextCache,
+     PetArchive,
+   ])
+
+   Keep schemaVersion: 1 — this is a clean install rewrite, not an upgrade.
+
+4. Update MigrationStrategy — onCreate only:
+
+   @override
+   MigrationStrategy get migration => MigrationStrategy(
+     onCreate: (m) async {
+       await m.createAll();
+     },
+   );
+
+   No onUpgrade needed — there is no existing data to migrate.
+
+5. Rewrite lib/core/database/migrations/migration_v1.dart to reflect the new schema.
+   onCreate only — no upgrade paths.
+
+6. Create lib/features/check_in/data/symptom_dao.dart.
+
+   Implement SymptomDao with these methods only:
+   - insertSymptom(CheckInSymptomsCompanion) → Future<void>
+   - insertFever(SymptomFeverCompanion) → Future<void>
+   - insertPain(SymptomPainCompanion) → Future<void>
+   - insertFatigue(SymptomFatigueCompanion) → Future<void>
+   - insertNausea(SymptomNauseaCompanion) → Future<void>
+   - insertOther(SymptomOtherCompanion) → Future<void>
+   - insertSubjective(CheckInSubjectiveCompanion) → Future<void>
+   - getSymptomsForCheckIn(String checkInId) → Future<List<CheckInSymptom>>
+   - getFullCheckIn(String checkInId) — fetches the base CheckInSymptoms rows then
+     joins each detail table in a single drift transaction; returns a plain Dart
+     data class (FullCheckIn) grouping all results.
+
+   Register SymptomDao in AppDatabase with @DriftAccessor(tables: [...]).
+
+7. Update lib/features/check_in/data/check_in_dao.dart.
+
+   Remove any reference to answersJson. All other methods (insertCheckIn,
+   findByDateRange, findLatest, amendCheckIn, getStreakData) stay — ensure their
+   CheckInsCompanion usage no longer references the removed field.
+
+8. After implementing, run:
+   dart run build_runner build --delete-conflicting-outputs
+
+   Then run: flutter analyze --no-pub
+   Fix any errors. Report the final analyze result and confirm app_database.g.dart
+   was regenerated.
+
+Do not modify PetStateTable, BaselineStats, AuditLog, SlmContextCache, or PetArchive.
+Do not implement any domain logic, UI, or Riverpod providers — data layer only.
+Do not add any Firebase, analytics, or remote dependencies.
+
+```
 
 ---
 
-#### What to do
+### Sprint 0.2c — Schema migration: update all old-schema references in the codebase
 
-##### 1. Replace `CheckIns` table in `app_database.dart`
+**What gets built:** Every file generated or written during Sprint 0.2 that references `answersJson`, the old flat symptom domain list, or `QuestionAnswer {domain, type, value}` is updated to match the new schema from Sprint 0.2b.
 
-Remove the current `CheckIns` definition entirely and replace with:
+**Dependencies:** Sprint 0.2b complete and compiling.
 
-```dart
-class CheckIns extends Table {
-  TextColumn get id => text()();
-  TextColumn get utcDate => text()();
-  TextColumn get localDate => text()();
-  IntColumn get wellnessScore => integer()();
-  IntColumn get mode => integer()();
-  RealColumn get depthScore => real().withDefault(const Constant(0.0))();
-  BoolColumn get isPartial => boolean().withDefault(const Constant(false))();
-  TextColumn get amendedAt => text().nullable()();
-  TextColumn get createdAt => text()();
+**Cursor prompt:**
 
-  @override
-  Set<Column> get primaryKey => {id};
-}
 ```
+We are building VitalPet. Sprint 0.2b introduced a new normalised symptom schema.
+The schema change was: answersJson removed from CheckIns; structured symptom data
+now lives in CheckInSymptoms + SymptomFever/Pain/Fatigue/Nausea/Other + CheckInSubjective.
 
-Changes from the old definition: `answersJson` is removed entirely.
+Sprint 0.2 generated code that still references the old schema. This sprint finds
+and fixes every such reference. No new features — only correctness fixes.
+
+Read before making any changes:
+- DATA_TO_COLLECT.md (authoritative field names and enum values)
+- lib/core/database/app_database.dart (current correct schema)
+- lib/features/check_in/data/symptom_dao.dart (new DAO)
+- assets/config/symptom_taxonomy.json (current correct category list)
+
+STEP 1 — Scan for stale answersJson references.
+
+Run this command and report every match:
+  grep -rn "answersJson\|answers_json" lib/ test/ --include="*.dart"
+
+For each match:
+- If in a Companion object or table reference: remove the field entirely.
+- If in a method that reads check-in data for processing: replace with a call to
+  SymptomDao.getFullCheckIn(checkInId) which returns the structured FullCheckIn object.
+- If in a SHA-256 hash for audit logging: hash the structured symptom data as JSON
+  instead: jsonEncode(fullCheckIn.toJson()).
+
+STEP 2 — Scan for stale flat symptom domain references.
+
+Run this command and report every match:
+  grep -rn "SymptomDomain\|symptom_domains\|'pain'\|'fatigue'\|'sleep'\|'appetite'\|'nausea'\|'mood'\|'cognitive'\|'medication'" lib/ test/ assets/config/ --include="*.dart" --include="*.json"
+
+For each match:
+- In Dart enum or class definitions: replace SymptomDomain with SymptomCategory
+  using values: fever, pain, fatigue, nausea, other — per DATA_TO_COLLECT.md.
+  Remove: sleep, appetite, mood, cognitive, medication (these are not top-level
+  categories in the new schema).
+- In assets/config/symptom_taxonomy.json: this was already updated in Sprint 0.1
+  with the correct category list. Verify it matches; fix if it does not.
+- In assets/config/cold_start_rules.json: verify the arrays contain only values
+  from [fever, pain, fatigue, nausea, other]. Fix any that use old domain names.
+
+STEP 3 — Scan for stale QuestionAnswer shape.
+
+Run this command and report every match:
+  grep -rn "QuestionAnswer\|question_answer" lib/ test/ --include="*.dart"
+
+QuestionAnswer is defined in lib/features/check_in/domain/question_answer.dart.
+The OLD shape was: QuestionAnswer {domain, type, value} where domain was a
+SymptomDomain string.
+
+Update the shape to:
+  @freezed
+  class QuestionAnswer with _$QuestionAnswer {
+    const factory QuestionAnswer({
+      required SymptomCategory category,  // fever|pain|fatigue|nausea|other
+      required String fieldName,          // the specific field being answered, e.g. 'type', 'scope', 'temperature'
+      required dynamic value,             // the answer value — bool, String, double, or List<String>
+    }) = _QuestionAnswer;
+  }
+
+Update every call site that constructs or pattern-matches a QuestionAnswer to use
+the new shape.
+
+STEP 4 — Scan for stale CheckInSessionState shape.
+
+Run this command and report every match:
+  grep -rn "CheckInSessionState\|check_in_session_state\|collectingAnswers" lib/ test/ --include="*.dart"
+
+In lib/features/check_in/domain/check_in_session_state.dart, the
+collectingAnswers variant holds a list of answers. Ensure it is typed as:
+  collectingAnswers({
+    required CheckInMode mode,
+    required List<SLMQuestion> questions,
+    required List<QuestionAnswer> answers,
+    required SymptomCategory? currentCategory, // which category is being collected right now
+  })
+
+STEP 5 — Scan for stale SLMContext or SLMOutput shape.
+
+Run this command and report every match:
+  grep -rn "SLMContext\|slm_context\|SLMOutput\|slm_output\|recentCheckins\|recent_checkins" lib/ test/ --include="*.dart"
+
+SLMContext feeds the SLM. The old shape assumed recentCheckins was a flat list
+of CheckIn objects with answersJson. Update the shape so recentCheckins is a
+list of FullCheckIn objects (from SymptomDao.getFullCheckIn), which carry the
+structured symptom data instead of raw JSON.
+
+Specifically in lib/features/slm/slm_context.dart:
+  @freezed
+  class SLMContext with _$SLMContext {
+    const factory SLMContext({
+      required int wellnessScore,
+      required CheckInMode mode,
+      required List<FullCheckIn> recentCheckins,  // was List<CheckIn>
+      required BaselineStats baselineStats,
+      HealthSnapshot? healthSnapshot,
+      String? conditionFocus,
+      String? streakFreezeReason,
+    }) = _SLMContext;
+  }
+
+STEP 6 — Scan for stale BaselineTracker signature.
+
+Run this command and report every match:
+  grep -rn "computeBaselines\|BaselineTracker" lib/ test/ --include="*.dart"
+
+In lib/features/slm/baseline_tracker.dart, the old signature was:
+  computeBaselines(List<CheckIn> recent)
+
+Update to:
+  computeBaselines(List<FullCheckIn> recent)
+
+The baseline metrics that can be computed from the new schema are:
+- wellness_score: from CheckIn.wellnessScore
+- pain_frequency: proportion of sessions with a pain symptom
+- fatigue_frequency: proportion of sessions with a fatigue symptom
+- fever_frequency: proportion of sessions with a fever symptom
+- nausea_frequency: proportion of sessions with a nausea symptom
+Update the method body to derive these metrics from FullCheckIn.symptoms
+rather than from answersJson parsing.
+
+STEP 7 — Verify isValidCheckin signature.
+
+Run this command and report every match:
+  grep -rn "isValidCheckin" lib/ test/ --include="*.dart"
+
+In lib/features/pet/domain/streak_manager.dart, the old signature was:
+  isValidCheckin(int wellnessScore, int answersCount)
+
+The answersCount parameter counted flat JSON answers. Replace with:
+  isValidCheckin(int wellnessScore, int symptomsCollected)
+
+Where symptomsCollected is the count of CheckInSymptoms rows inserted for
+this session. The validity rule is unchanged: at least 1 symptom collected
+OR mode == CheckInMode.quick (wellnessScore >= 7).
+
+STEP 8 — Run final checks.
+
+  dart run build_runner build --delete-conflicting-outputs
+  flutter analyze --no-pub
+  flutter test
+
+Fix any remaining errors. Report a list of every file changed and the
+final flutter analyze result. There should be zero errors.
+
+```
 
 ---
-
-##### 2. Add new tables to `app_database.dart`
-
-###### `CheckInSymptoms`
-One row per symptom per check-in session.
-
-```dart
-class CheckInSymptoms extends Table {
-  TextColumn get id => text()();
-  TextColumn get checkInId => text().references(CheckIns, #id)();
-  TextColumn get category => text()(); // 'fever'|'pain'|'fatigue'|'nausea'|'other'
-  IntColumn get onsetDay => integer().nullable()(); // computed from history after insert
-  TextColumn get pattern => text().nullable()(); // category-specific enum value as string
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-```
-
-###### `SymptomFever`
-One row per fever symptom. FK → `CheckInSymptoms.id`.
-
-```dart
-class SymptomFever extends Table {
-  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
-  RealColumn get temperature => real().nullable()();
-  TextColumn get unit => text().nullable()(); // 'C'|'F'
-  TextColumn get method => text().nullable()(); // 'oral'|'ear'|'forehead'|'other'
-  BoolColumn get skipped => boolean().withDefault(const Constant(false))();
-
-  @override
-  Set<Column> get primaryKey => {symptomId};
-}
-```
-
-###### `SymptomPain`
-One row per pain symptom. FK → `CheckInSymptoms.id`.
-
-```dart
-class SymptomPain extends Table {
-  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
-  TextColumn get regionsJson => text()(); // JSON array of body_region strings
-  TextColumn get type => text()(); // 'sharp'|'dull'|'throbbing'|'burning'|'cramping'|'aching'
-  TextColumn get triggersJson => text().nullable()(); // JSON array, nullable
-
-  @override
-  Set<Column> get primaryKey => {symptomId};
-}
-```
-
-###### `SymptomFatigue`
-One row per fatigue symptom. FK → `CheckInSymptoms.id`.
-
-```dart
-class SymptomFatigue extends Table {
-  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
-  TextColumn get scope => text()(); // 'functional'|'wiped_out'|'debilitating'
-  BoolColumn get blocksDaily => boolean()();
-
-  @override
-  Set<Column> get primaryKey => {symptomId};
-}
-```
-
-###### `SymptomNausea`
-One row per nausea symptom. FK → `CheckInSymptoms.id`.
-
-```dart
-class SymptomNausea extends Table {
-  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
-  BoolColumn get vomiting => boolean()();
-  TextColumn get vomitFreq => text().nullable()(); // 'once'|'few_times'|'persistent' — null if vomiting=false
-  TextColumn get appetite => text()(); // 'normal'|'reduced'|'none'
-  TextColumn get dehydrationSignsJson => text().nullable()(); // JSON array: 'dry_mouth'|'dark_urine'|'dizziness'
-
-  @override
-  Set<Column> get primaryKey => {symptomId};
-}
-```
-
-###### `SymptomOther`
-One row per other symptom. FK → `CheckInSymptoms.id`.
-
-```dart
-class SymptomOther extends Table {
-  TextColumn get symptomId => text().references(CheckInSymptoms, #id)();
-  TextColumn get freeText => text()();
-  TextColumn get extractedDetailsJson => text().nullable()(); // best-effort SLM parse
-
-  @override
-  Set<Column> get primaryKey => {symptomId};
-}
-```
-
-###### `CheckInSubjective`
-One row per check-in. FK → `CheckIns.id`. All fields optional.
-
-```dart
-class CheckInSubjective extends Table {
-  TextColumn get checkInId => text().references(CheckIns, #id)();
-  TextColumn get freeNotes => text().nullable()();
-  TextColumn get slmTagsJson => text().nullable()(); // JSON array of strings
-  TextColumn get followUpExchangesJson => text().nullable()();
-  // JSON array of { role: 'user'|'assistant', content: string, timestamp: ISO8601 }
-
-  @override
-  Set<Column> get primaryKey => {checkInId};
-}
-```
-
----
-
-##### 3. Update `@DriftDatabase` annotation
-
-```dart
-@DriftDatabase(tables: [
-  CheckIns,
-  CheckInSymptoms,
-  SymptomFever,
-  SymptomPain,
-  SymptomFatigue,
-  SymptomNausea,
-  SymptomOther,
-  CheckInSubjective,
-  PetStateTable,
-  BaselineStats,
-  AuditLog,
-  SlmContextCache,
-  PetArchive,
-])
-```
-
-Keep `schemaVersion: 1` — this is a clean install rewrite, not an upgrade.
-
----
-
-##### 4. `MigrationStrategy` — onCreate only
-
-```dart
-@override
-MigrationStrategy get migration => MigrationStrategy(
-  onCreate: (m) async {
-    await m.createAll();
-  },
-);
-```
-
-No `onUpgrade` needed — there is no existing data to migrate.
-
----
-
-##### 5. Replace `lib/core/database/migrations/migration_v1.dart`
-
-Rewrite to reflect the new schema. `onCreate` only — no upgrade paths.
-
----
-
-##### 6. Create `lib/features/check_in/data/symptom_dao.dart`
-
-Implement `SymptomDao` with these methods only — no other logic:
-
-- `insertSymptom(CheckInSymptomsCompanion) → Future<void>`
-- `insertFever(SymptomFeverCompanion) → Future<void>`
-- `insertPain(SymptomPainCompanion) → Future<void>`
-- `insertFatigue(SymptomFatigueCompanion) → Future<void>`
-- `insertNausea(SymptomNauseaCompanion) → Future<void>`
-- `insertOther(SymptomOtherCompanion) → Future<void>`
-- `insertSubjective(CheckInSubjectiveCompanion) → Future<void>`
-- `getSymptomsForCheckIn(String checkInId) → Future<List<CheckInSymptom>>`
-- `getFullCheckIn(String checkInId)` — fetches the base symptom rows then fans out to each detail table in a single drift `transaction`. Return a plain Dart data class or record grouping all results.
-
-Register `SymptomDao` in `AppDatabase` with `@DriftAccessor(tables: [...])`.
-
----
-
-##### 7. Update `lib/features/check_in/data/check_in_dao.dart`
-
-Remove any reference to `answersJson`. All other methods (`insertCheckIn`, `findByDateRange`, `findLatest`, `amendCheckIn`, `getStreakData`) stay — just ensure their `CheckInsCompanion` usage no longer references the removed field.
-
----
-
-##### 8. After implementing
-
-Run:
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-Then:
-```bash
-flutter analyze --no-pub
-```
-
-Fix any errors. Report the final analyze result and confirm `app_database.g.dart` was regenerated.
-
----
-
-#### What NOT to change
-
-- Do not modify `PetStateTable`, `BaselineStats`, `AuditLog`, `SlmContextCache`, or `PetArchive`.
-- Do not implement any domain logic, UI, or Riverpod providers — data layer only.
-- Do not add any Firebase, analytics, or remote dependencies.
 
 ## Phase 1 — Domain Logic (no UI)
 
 **Goal:** All pure Dart business logic implemented and tested. Nothing shown on screen yet.
 
 **Duration estimate:** 3–4 hours  
-**Dependencies:** Phase 0 complete, DB schema generated
+**Dependencies:** Phase 0 complete (all three Sprint 0.2 sub-sprints done), DB schema generated and codebase consistent.
 
 ### Sprint 1.1 — Check-in domain
 
@@ -374,12 +515,13 @@ Fix any errors. Report the final analyze result and confirm `app_database.g.dart
 **Cursor prompt:**
 
 ```
-We are building VitalPet. Phase 0 (scaffold + DB schema) is complete.
+We are building VitalPet. Phase 0 (scaffold + DB schema + schema migration) is complete.
 
 Read before writing any code:
 - .cursor/rules/03-feature-logic.mdc
 - .cursor/skills/check-in-engine/SKILL.md
 - .cursor/skills/pet-engine/SKILL.md
+- DATA_TO_COLLECT.md (symptom categories and fields)
 
 Implement pure Dart domain logic only — no Flutter widgets, no screens, no Riverpod providers yet.
 
@@ -394,25 +536,40 @@ Implement pure Dart domain logic only — no Flutter widgets, no screens, no Riv
 
 3. lib/features/pet/domain/streak_manager.dart
    - activateFreeze(String reason) — sets freeze fields in PetState
-   - isValidCheckin(int wellnessScore, int answersCount) → bool — anti-gaming rule
+   - isValidCheckin(int wellnessScore, int symptomsCollected) → bool
+     Rule: returns true if (mode == quick AND wellnessScore >= 7) OR symptomsCollected >= 1
    - All calculations UTC-date keyed
 
 4. lib/features/pet/domain/milestone_detector.dart
    - detectMilestone(int streak) → MilestoneType? — checks 7, 14, 30, 90
 
 5. lib/features/check_in/domain/check_in_session_state.dart
-   - freezed union: idle | collectingScore | collectingAnswers(mode, questions, answers) | partial | completing
+   - freezed union: idle | collectingScore | collectingAnswers | partial | completing
+   - collectingAnswers variant fields:
+       required CheckInMode mode,
+       required List<SLMQuestion> questions,
+       required List<QuestionAnswer> answers,
+       required SymptomCategory? currentCategory
 
 6. lib/features/check_in/domain/question_answer.dart
-   - freezed: QuestionAnswer {domain, type, value}
+   - freezed: QuestionAnswer {required SymptomCategory category, required String fieldName, required dynamic value}
+   - category: one of fever|pain|fatigue|nausea|other
+   - fieldName: the specific field being captured, e.g. 'type', 'scope', 'temperature', 'regions'
+   - value: bool, String, double, or List<String> depending on the field
+
+7. lib/core/constants/symptom_domains.dart
+   - Define SymptomCategory enum: fever, pain, fatigue, nausea, other
+   - Remove any pre-existing SymptomDomain enum if present
 
 Then write unit tests for all of the above in test/features/:
-- test/features/check_in/mode_selector_test.dart — test score 1,3,4,6,7,10
+- test/features/check_in/mode_selector_test.dart — test score 1, 3, 4, 6, 7, 10
 - test/features/pet/vitality_calculator_test.dart — zero streak, max streak, 1/2/3+ missed days, vulnerability freeze, depth bonus
-- test/features/pet/milestone_detector_test.dart — 7,14,30,90 hit; 8,15 miss
+- test/features/pet/streak_manager_test.dart — isValidCheckin: quick mode score 7 with 0 symptoms = valid; not_great with 1 symptom = valid; not_great with 0 symptoms = invalid
+- test/features/pet/milestone_detector_test.dart — 7, 14, 30, 90 hit; 8, 15 miss
 
 Run: flutter test test/features/
 Report test results. Fix any failures.
+
 ```
 
 ---
@@ -429,6 +586,7 @@ We are building VitalPet. Phase 0 complete, Sprint 1.1 (check-in + pet domain) c
 Read before writing any code:
 - .cursor/rules/03-feature-logic.mdc
 - .cursor/skills/slm-layer/SKILL.md
+- DATA_TO_COLLECT.md (symptom categories and field names the SLM must ask about)
 
 Implement SLM domain logic only — no screens, no UI.
 
@@ -439,6 +597,9 @@ Implement SLM domain logic only — no screens, no UI.
 
 2. lib/features/slm/slm_output.dart and slm_context.dart
    - freezed data classes per .cursor/skills/slm-layer/SKILL.md schema
+   - SLMContext.recentCheckins must be List<FullCheckIn> (not List<CheckIn>)
+   - SLMQuestion.category must be SymptomCategory (fever|pain|fatigue|nausea|other)
+   - SLMQuestion.fieldName identifies the specific field to capture
 
 3. lib/features/slm/medical_content_filter.dart
    - Loads patterns from assets/config/medical_filter_patterns.json via rootBundle at init
@@ -449,20 +610,28 @@ Implement SLM domain logic only — no screens, no UI.
 4. lib/features/slm/rule_based_fallback.dart
    - Loads cold_start_rules.json at init
    - getQuestions(SLMContext context) → List<SLMQuestion>
+   - cold_start_rules.json values are SymptomCategory names (fever|pain|fatigue|nausea|other)
    - Uses context.conditionFocus to pick question order; falls back to default order
 
 5. lib/features/slm/baseline_tracker.dart
-   - computeBaselines(List<CheckIn> recent) → Map<String, BaselineStats>
+   - computeBaselines(List<FullCheckIn> recent) → Map<String, BaselineStats>
+   - Baseline metrics derived from structured data (not answersJson):
+       wellness_score: mean of CheckIn.wellnessScore over recent sessions
+       pain_frequency: proportion of sessions with a pain symptom in CheckInSymptoms
+       fatigue_frequency: proportion of sessions with a fatigue symptom
+       fever_frequency: proportion of sessions with a fever symptom
+       nausea_frequency: proportion of sessions with a nausea symptom
    - checkDeviation(String metric, List<double> values, BaselineStats baseline) → DeviationAlert?
    - Trigger: >1.5 SD below mean for 3 consecutive values
 
 Then write tests:
 - test/features/slm/medical_content_filter_test.dart — blocked phrases fail, safe content passes, safeFallback is correct string
-- test/features/slm/rule_based_fallback_test.dart — correct domain order for chronic_pain, post_surgery, default
-- test/features/slm/baseline_tracker_test.dart — deviation detected at exactly 3 days, not at 2; no alert when within 1.5 SD
+- test/features/slm/rule_based_fallback_test.dart — correct category order for chronic_pain, post_surgery, default; categories are from SymptomCategory enum only
+- test/features/slm/baseline_tracker_test.dart — deviation detected at exactly 3 sessions, not at 2; no alert when within 1.5 SD; test uses FullCheckIn fixtures, not CheckIn with answersJson
 
 Run: flutter test test/features/slm/
 Fix any failures. Report results.
+
 ```
 
 ---
@@ -514,9 +683,10 @@ Implement:
 
 6. Each placeholder screen: just a Scaffold with an AppBar title and a centered Text('Coming soon'). No logic.
 
-Run: flutter run -d <device>  (or flutter build apk --debug)
+Run: flutter run -d ios
 Report that the app launches, navigates between placeholder screens, and deep-link works.
 Fix any errors. Run: flutter analyze --no-pub
+
 ```
 
 ---
@@ -526,7 +696,7 @@ Fix any errors. Run: flutter analyze --no-pub
 **Goal:** The pet lives on screen, animated with simple PNGs (slight rocking), streak visible, pet can die.
 
 **Duration estimate:** 3–4 hours  
-**Dependencies:** Phase 2 complete, PNG files (or SVGs) in assets/images/pets/
+**Dependencies:** Phase 2 complete, PNG files in assets/images/pets/
 
 ### Sprint 3.1 — Riverpod providers + PetRenderer
 
@@ -578,13 +748,14 @@ Implement:
 
 Run: flutter analyze --no-pub && flutter test test/features/pet/
 Report results. Fix any failures.
+
 ```
 
 ---
 
 ## Phase 4 — Check-In Flow
 
-**Goal:** Full working check-in: Mode 1/2/3, SLM inference with fallback, partial session, body map, completion triggers pet update.
+**Goal:** Full working check-in: Mode 1/2/3, SLM inference with fallback, body map, structured symptom collection, completion triggers pet update.
 
 **Duration estimate:** 5–6 hours  
 **Dependencies:** Phase 3 complete
@@ -601,23 +772,39 @@ Read before writing any code:
 - .cursor/rules/03-feature-logic.mdc
 - .cursor/skills/check-in-engine/SKILL.md
 - .cursor/skills/slm-layer/SKILL.md
+- DATA_TO_COLLECT.md (every field the UI must collect per symptom category)
 
 Implement:
 
 1. lib/features/check_in/domain/check_in_engine.dart — CheckInEngine class:
    - startSession(): loads health snapshot via HealthAdapter, initialises session state
-   - submitWellnessScore(int score): calls ModeSelector, if Mode 2/3 calls SLMClient with 3s timeout, falls back to RuleBasedFallback on SLMTimeoutException
-   - submitAnswer(QuestionAnswer answer): adds to session state
-   - savePartial(): persists partial session to DB with isPartial=true
-   - completeSession(): atomic transaction: insertCheckIn + updatePetState + auditLogDao.append(CHECKIN_WRITE), then recalculateVitality(), then updateWidgetData(), then check vulnerabilitySafeguard
-   - amendSession(String id): updates answersJson + amendedAt, appends AMENDMENT audit entry
+   - submitWellnessScore(int score): determines overall_status (score <=6 = not_great, >=7 = great).
+     If great (Mode 1): no symptom questions asked.
+     If not_great (Mode 2/3): calls SLMClient with 3s timeout, falls back to RuleBasedFallback on SLMTimeoutException.
+   - submitAnswer(QuestionAnswer answer): adds to session state; answer.category + answer.fieldName
+     identify which symptom table and field to populate on commit.
+   - savePartial(): persists partial session to DB with isPartial=true; flushes any complete
+     QuestionAnswer groups to SymptomDao as partial rows.
+   - completeSession(): atomic db.transaction():
+       a. CheckInDao.insertCheckIn(companion) — no answersJson
+       b. For each collected symptom: SymptomDao.insertSymptom() + insertFever/Pain/Fatigue/Nausea/Other()
+       c. SymptomDao.insertSubjective() if freeNotes or followUpExchanges exist
+       d. PetDao.updatePetState()
+       e. AuditLogDao.appendInTransaction(CHECKIN_WRITE, payloadHash of symptom IDs)
+     Then: recalculateVitality(), updateWidgetData(), check vulnerabilitySafeguard,
+           compute onsetDay for each new symptom and update CheckInSymptoms.onsetDay.
+   - amendSession(String id): re-inserts updated symptom rows (delete old, insert new),
+     sets CheckIns.amendedAt, appends AMENDMENT audit entry.
 
-2. lib/features/check_in/domain/check_in_session_notifier.dart — AsyncNotifier wrapping CheckInEngine, one method per engine call.
+2. lib/features/check_in/domain/check_in_session_notifier.dart — AsyncNotifier wrapping
+   CheckInEngine, one method per engine call.
 
 3. lib/features/check_in/presentation/check_in_screen.dart — ConsumerWidget:
    Watches check_in_session state, renders:
    - CheckInSessionState.idle / collectingScore → WellnessSlider
-   - CheckInSessionState.collectingAnswers → QuestionCard list (one at a time)
+   - If wellnessScore >= 7: show Mode 1 completion immediately (no symptom questions)
+   - If wellnessScore <= 6: show CheckInSessionState.collectingAnswers →
+       QuestionCard list (one field at a time within the current category)
    - Mode 3: CompanionBubble instead of QuestionCard
    - "Save and come back" button always visible in Mode 2/3
    - "I'm done" always visible in Mode 3
@@ -628,12 +815,22 @@ Implement:
    - Semantics(slider: true, value: '$score', min: '1', max: '10')
 
 5. lib/features/check_in/presentation/widgets/question_card.dart:
-   - Renders binary (two buttons), slider (1–5), bodymap (see below), or text input
+   - Renders a single field question for the current symptom category
+   - Input types: binary yes/no buttons, 1–5 or enumerated slider, body map tap, free text
+   - Which input type to render is determined by the QuestionAnswer.fieldName:
+       'temperature' → numeric text input
+       'skipped' → binary yes/no
+       'regions' → body map widget
+       'type', 'scope', 'appetite', 'vomitFreq', 'method', 'pattern' → enumerated choice buttons
+       'blocksDaily', 'vomiting' → binary yes/no
+       'triggersJson', 'dehydrationSignsJson' → multi-select chips
+       'freeText' → free text input
    - Each rendered string from SLM must go through MedicalContentFilter before display
 
 6. lib/features/check_in/presentation/widgets/body_map.dart:
    - flutter_svg silhouette, tap regions with min 44×44 targets
    - Max 3 selected, deselects oldest on 4th tap
+   - Selected regions stored as List<String> matching body_regions in symptom_taxonomy.json
 
 7. lib/features/check_in/presentation/widgets/companion_bubble.dart:
    - Speech bubble styled widget, attributed to pet
@@ -644,6 +841,7 @@ On completion: pet reaction animation triggers (a single happy bounce of the PNG
 
 Run: flutter analyze --no-pub && flutter test test/features/check_in/
 Fix any errors. Report results.
+
 ```
 
 ---
@@ -695,6 +893,7 @@ After onboarding complete, check that GoRouter guard redirects to /onboarding on
 
 Run: flutter analyze --no-pub
 Test manually that full onboarding flow runs and pet appears on home screen after completion.
+
 ```
 
 ---
@@ -716,11 +915,13 @@ We are building VitalPet. Phases 0–5 complete.
 Read before writing any code:
 - .cursor/skills/handoff/SKILL.md
 - .cursor/rules/01-security-hipaa.mdc (de-identification rules)
+- DATA_TO_COLLECT.md (to understand what symptom data is available for the narrative)
 
 Implement the doctor handoff using the pdf 3.x + printing 5.x packages (pure Dart, no native bridge).
 
 1. lib/features/handoff/handoff_generator.dart — generateAndShare(DateRange, WidgetRef):
    - Read check-ins from CheckInDao.findByDateRange
+   - For each check-in, call SymptomDao.getFullCheckIn(id) to get structured symptom data
    - Optionally fetch health summary via HealthAdapter
    - Call NarrativeGenerator.generate(NarrativeContext) — de-identified, no user name
    - Build pw.Document with 2–3 pages (see SKILL.md structure)
@@ -730,27 +931,39 @@ Implement the doctor handoff using the pdf 3.x + printing 5.x packages (pure Dar
 2. lib/features/handoff/chart_data_builder.dart:
    - buildTrendChart: List<TrendPoint> with score, date, type (normal|missed|freeze)
    - buildHeatmap: Map<String, int?> of date → score for calendar grid
+   - buildSymptomFrequency: Map<SymptomCategory, int> — count of sessions each category appeared
 
 3. PDF page 1:
    - Disclaimer footer on every page (non-removable): "This summary was generated by VitalPet and is not a medical record."
    - Narrative: bolded headline, context paragraph, "Questions to raise"
-   - Summary stats: date range, check-in count/total, avg wellness, top 3 domains
+   - Summary stats: date range, check-in count/total, avg wellness score,
+     top 3 symptom categories by frequency (from CheckInSymptoms.category counts)
    - Trend line chart via pw.Chart
 
 4. PDF page 2:
    - Calendar heatmap (6 weeks × 7 days grid, cell colour from wellness score gradient)
-   - Notable events list (score ≤ 4, deviation alerts, >2 new domains in a day)
+   - Notable events list: days with score <=4 OR fever recorded OR 2+ symptom categories in one session
 
-5. PDF page 3 (conditional):
-   - Dual-axis chart: wellness vs sleep, wellness vs steps
+5. PDF page 3 (conditional, if health data available):
+   - Dual-axis chart: wellness score vs sleep duration
+   - Dual-axis chart: wellness score vs step count
 
-6. lib/features/handoff/presentation/handoff_screen.dart:
+6. NarrativeContext passed to SLM must be de-identified and must summarise
+   symptom data structurally. Include:
+   - avgWellnessScore, trendDirection
+   - symptomFrequency: Map<SymptomCategory, int>
+   - mostFrequentPainRegions: List<String> (from SymptomPain.regionsJson across sessions)
+   - fatigueBlockedDailyCount: int (sessions where SymptomFatigue.blocksDaily = true)
+   - No patient name, no device ID, no raw free text from SymptomOther or CheckInSubjective
+
+7. lib/features/handoff/presentation/handoff_screen.dart:
    - Date range selector (7d / 30d / 90d)
    - "Generate & Share" button — triggers generateAndShare()
    - Loading state while generating
 
 Run: flutter analyze --no-pub
 Test manually: generate a handoff from the demo seed data. Verify PDF opens, shows all pages, disclaimer is present, share sheet appears.
+
 ```
 
 ---
@@ -803,6 +1016,7 @@ Then implement lib/features/notifications/pattern_adapter.dart:
 
 Run: flutter analyze --no-pub
 Test on device that primary notification fires at set time and critical fires immediately when triggered.
+
 ```
 
 ---
@@ -818,28 +1032,28 @@ Read before writing any code:
 - .cursor/rules/04-native-widgets.mdc
 - .cursor/skills/native-widgets/SKILL.md
 
-IMPORTANT: This sprint involves native Swift and Kotlin code. The Flutter side is already done via home_widget package. This sprint is ONLY the native widget targets.
+IMPORTANT: This sprint involves native Swift code only. The Flutter side is already done via the
+home_widget package. This sprint is ONLY the iOS WidgetKit native target.
+Android Glance is OUT OF SCOPE for this MVP — do not implement native/android/widget/.
 
 For iOS (native/ios/VitalPetWidget/):
 1. VitalPetWidget.swift — WidgetBundle + Widget configuration, supports .systemSmall and .systemMedium
 2. WidgetDataProvider.swift — TimelineProvider reading from UserDefaults(suiteName: "group.com.vitalpet.shared")
 3. VitalPetEntryView.swift — SwiftUI views:
-   - Small (2×2): pet sprite image (from widget_sprites/) + streak count + "Check in" widgetURL link
+   - Small (2×2): pet image (from assets/images/pets/) + streak count + "Check in" widgetURL link
    - Medium (4×2): same + WellnessSparkline
 4. WellnessSparkline.swift — SwiftUI Path: 7 bars, height proportional to score (1–10), grey for nil/missed
 5. VitalPetWidget.entitlements — App Group: group.com.vitalpet.shared
 
-Android Glance widget is OUT OF SCOPE for this iOS-first MVP.
-Do not implement native/android/widget/.
-Implement ONLY the iOS WidgetKit widget as specified above.
-Document the Android Glance sprint as post-hackathon work.
-
 After implementing native code:
-- On iOS: open the Xcode project, add the widget extension target, set the App Group entitlement on BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
+- Open the Xcode project, add the widget extension target, set the App Group entitlement on
+  BOTH the main app and widget targets. Verify the widget appears in the home screen widget picker.
 
-Note: The pet images used in widgets mirror the identical static PNGs used in the main app from assets/images/pets/.
+Note: The pet images used in widgets are the same static PNGs from assets/images/pets/,
+      copied into the widget extension's asset catalog in Xcode.
 
 Document any manual Xcode steps required (entitlements, target membership, etc.).
+
 ```
 
 ---
@@ -869,10 +1083,11 @@ Implement:
    - Pet archive ("Your companions") → ListView of pet_archive rows
 
 2. lib/core/database/export_service.dart — exportAllData() → String (JSON):
-   - Includes check_ins, pet_state, pet_archive, baseline_stats
-   - Excludes audit_log, slm_context_cache
+   - Includes: check_ins, check_in_symptoms, symptom_fever, symptom_pain, symptom_fatigue,
+     symptom_nausea, symptom_other, check_in_subjective, pet_state, pet_archive, baseline_stats
+   - Excludes: audit_log, slm_context_cache
    - Pretty-printed with const JsonEncoder.withIndent('  ')
-   - Root includes exportedAt UTC timestamp
+   - Root includes exportedAt UTC timestamp and schemaVersion: 2
 
 3. Calm Mode integration:
    - When calmMode=true: all loss-aversion copy replaced ("critical" → "needs attention", death screen hidden, streak-only UI)
@@ -893,6 +1108,7 @@ Implement:
 
 Run: flutter analyze --no-pub && flutter test
 Fix any errors. Report final results.
+
 ```
 
 ---
@@ -911,21 +1127,39 @@ Fix any errors. Report final results.
 ```
 We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, polish, and build.
 
-1. scripts/seed_demo.dart — implement fully:
-   - Creates a pet named "Mochi", species "cat", streak=23, vitality=85
-   - Inserts 30 days of check-ins matching demo/seed_data.json spec:
-     Days 1–2: score 1–2 (flare days, Mode 3 companion check-ins)
-     Days 3–10: score 4–5 (moderate days, Mode 2)
-     Days 11–30: score 7–9 (good days, Mode 1)
-   - Mocks health data: sleep avg 6.8h, steps avg 4200/day
-   - Run with: dart scripts/seed_demo.dart
+1. scripts/seed_demo.dart — implement fully.
+
+   Creates a pet named "Mochi", species "cat", streak=23, vitality=85.
+   Inserts 30 days of structured check-ins using the new symptom schema:
+
+   Days 1–2 (flare days, Mode 3, wellnessScore 1–2):
+   - CheckIn: wellnessScore=2, mode=3, depthScore=0.9
+   - CheckInSymptoms: fever (pattern=intermittent), pain (pattern=worsening), fatigue (pattern=all_day)
+   - SymptomFever: temperature=38.5, unit='C', method='oral', skipped=false
+   - SymptomPain: regionsJson='["lower_limb_l","lower_limb_r","back"]', type='aching'
+   - SymptomFatigue: scope='debilitating', blocksDaily=true
+   - CheckInSubjective: freeNotes='Really struggling today.'
+
+   Days 3–10 (moderate days, Mode 2, wellnessScore 4–5):
+   - CheckIn: wellnessScore=4 or 5, mode=2, depthScore=0.6
+   - CheckInSymptoms: pain, fatigue
+   - SymptomPain: regionsJson='["back"]', type='dull'
+   - SymptomFatigue: scope='functional', blocksDaily=false
+
+   Days 11–30 (good days, Mode 1, wellnessScore 7–9):
+   - CheckIn: wellnessScore=7 to 9, mode=1, depthScore=0.1
+   - No CheckInSymptoms rows — overall_status is implicitly 'great'
+
+   Mocks health data: sleep avg 6.8h, steps avg 4200/day.
+   Run with: dart scripts/seed_demo.dart
 
 2. Implement a --demo flag in GoRouter:
    - If --demo dart-define is set: load seed data on launch, skip onboarding
    - Run with: flutter run --dart-define=DEMO=true
 
 3. SLM warm-up for demo:
-   - On demo launch, pre-warm the SLM with Mochi's 30-day context so first question appears in <1 second when wellness score 2 is submitted
+   - On demo launch, pre-warm the SLM with Mochi's 30-day structured context so the first
+     question appears in <1 second when wellness score 2 is submitted.
 
 4. Polish pass:
    - Verify all notification copy uses pet name (no "your pet" fallback visible)
@@ -935,18 +1169,15 @@ We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, p
    - Verify flutter analyze --no-pub reports zero errors
 
 5. iOS 26 compatibility check:
-   - Confirm UIDesignRequiresCompatibility = YES is set in
-     ios/Runner/Info.plist
+   - Confirm UIDesignRequiresCompatibility = YES is set in ios/Runner/Info.plist
    - Run the app on the physical iOS 26 device (not just simulator)
-   - Verify: navigation works, wellness slider renders correctly,
-     pet Rive animation plays, check-in flow completes end to end,
-     handoff PDF generates and share sheet opens
+   - Verify: navigation works, wellness slider renders correctly, pet PNG animation plays,
+     check-in flow completes end to end, handoff PDF generates and share sheet opens
    - Verify: no visual regressions from Liquid Glass system chrome
      (the opt-out flag should prevent any system-imposed glass effects)
-   - If any stock Alert dialogs or action sheets look inconsistent with
-     the rest of the app's design, replace them with custom Flutter
-     equivalents (showDialog with a custom widget) rather than using
-     CupertinoAlertDialog
+   - If any stock Alert dialogs or action sheets look inconsistent with the rest of the
+     app's design, replace them with custom Flutter equivalents (showDialog with a custom
+     widget) rather than using CupertinoAlertDialog
 
 6. Build release candidate:
    - flutter build ios --release (iOS) — or flutter build ipa if signing configured
@@ -955,6 +1186,7 @@ We are building VitalPet. Phases 0–8 complete. Final sprint: demo seed data, p
 7. Run /audit command and report all PASS/WARN/FAIL.
 
 Final report: list every FR from the SRS and whether it is implemented, partial, or out of scope for this build.
+
 ```
 
 ---
@@ -963,8 +1195,10 @@ Final report: list every FR from the SRS and whether it is implemented, partial,
 
 - App launches cold in < 2 seconds
 - Mode 1 check-in completable in < 20 seconds (3 taps: slider → submit → done)
+- Mode 2/3 check-in collects at least one structured symptom and commits to DB correctly
 - SLM inference completes in < 3 seconds on demo device
 - Handoff PDF generates in < 10 seconds for 30-day dataset
+- Handoff PDF shows top 3 symptom categories (not old flat domains)
 - Widget shows on home screen with correct pet state and streak
 - Notifications fire at scheduled time
 - No `flutter analyze` errors
@@ -977,27 +1211,20 @@ Final report: list every FR from the SRS and whether it is implemented, partial,
 
 ## Post-hackathon: Android parity
 
-These sprints are explicitly out of scope for the hackathon build.
-Run them after the iOS version is stable and submitted.
+These sprints are explicitly out of scope for the hackathon build. Run them after the iOS version is stable and submitted.
 
 ### Sprint A.1 — Android Glance widget
 
-Implement native/android/widget/ using Kotlin + Glance.
-Reference: .cursor/skills/native-widgets/SKILL.md (Android section).
+Implement native/android/widget/ using Kotlin + Glance. Reference: .cursor/skills/native-widgets/[SKILL.md](http://SKILL.md) (Android section).
 
 ### Sprint A.2 — Health Connect integration
 
-The health package already supports Health Connect.
-Add Health Connect permissions to AndroidManifest.xml.
-Test on Android 14+ emulator.
+The health package already supports Health Connect. Add Health Connect permissions to AndroidManifest.xml. Test on Android 14+ emulator.
 
 ### Sprint A.3 — Android notification channels
 
-flutter_local_notifications requires explicit channel setup on Android.
-Add notification channel creation in main.dart for Android.
+flutter_local_notifications requires explicit channel setup on Android. Add notification channel creation in main.dart for Android.
 
 ### Sprint A.4 — Android E2E testing
 
-Run integration_test suite on Android emulator.
-Test model download over cellular warning on Android.
-Verify widget updates on Android 14+.
+Run integration_test suite on Android emulator. Test model download over cellular warning on Android. Verify widget updates on Android 14+.

@@ -7,9 +7,20 @@ import 'package:vitalpet/features/pet/presentation/home_screen.dart';
 import 'package:vitalpet/presentation/screens/settings_screen.dart';
 
 /// GoRouter configuration for VitalPet.
+///
 /// Deep-link scheme: vitalpet://
+///   vitalpet://checkin  →  /checkin
+///   vitalpet://handoff  →  /handoff
+///
+/// iOS: register the URL scheme in ios/Runner/Info.plist:
+///
+/// ```xml
+/// CFBundleURLTypes → CFBundleURLSchemes → vitalpet
+/// ```
 final appRouter = GoRouter(
   initialLocation: '/',
+  debugLogDiagnostics: true,
+  redirect: _handleDeepLink,
   routes: [
     GoRoute(
       path: '/',
@@ -37,3 +48,16 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+/// Rewrites deep links using the vitalpet:// scheme to their in-app paths.
+/// e.g. vitalpet://checkin  →  /checkin
+String? _handleDeepLink(_, GoRouterState state) {
+  final uri = state.uri;
+  if (uri.scheme == 'vitalpet') {
+    // vitalpet://checkin  →  host='checkin', path=''
+    // Map the host segment to a route path.
+    final segment = uri.host.isNotEmpty ? uri.host : uri.path.replaceFirst('/', '');
+    if (segment.isNotEmpty) return '/$segment';
+  }
+  return null;
+}

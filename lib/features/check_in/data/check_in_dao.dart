@@ -43,17 +43,13 @@ class CheckInDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Update the [answersJson] and [amendedAt] timestamp for a check-in by [id].
-  /// Writes an AMENDMENT audit entry via [AuditLogDao] — caller must do that
-  /// separately inside the same transaction.
-  Future<void> amendCheckIn(
-    String id,
-    String newAnswersJson,
-    String amendedAt,
-  ) async {
+  /// Update the [amendedAt] timestamp for a check-in by [id].
+  /// Structured symptom data lives in the symptom tables — use [SymptomDao]
+  /// to update those rows in the same transaction.
+  /// Caller must write an AMENDMENT audit entry inside the same transaction.
+  Future<void> amendCheckIn(String id, String amendedAt) async {
     await (update(checkIns)..where((tbl) => tbl.id.equals(id))).write(
       CheckInsCompanion(
-        answersJson: Value(newAnswersJson),
         amendedAt: Value(amendedAt),
       ),
     );
