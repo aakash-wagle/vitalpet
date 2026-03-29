@@ -52,6 +52,11 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   /// Creates the initial PetState row in the encrypted DB (species='dog',
   /// vitality=60, streak=0) and marks onboarding complete.
   Future<void> complete() async {
+    final snapshot = state;
+    final petName = snapshot.petName.trim();
+    final conditionFocus = snapshot.conditionFocus;
+    final step = snapshot.step;
+
     final petDao = ref.read(petDaoProvider);
     final db = ref.read(databaseProvider);
     final petId = 'pet_${DateTime.now().millisecondsSinceEpoch}';
@@ -60,7 +65,7 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       await petDao.updatePetState(
         PetStateTableCompanion(
           petId: Value(petId),
-          name: Value(state.petName.trim()),
+          name: Value(petName),
           species: const Value('dog'),
           vitality: const Value(60),
           streak: const Value(0),
@@ -73,10 +78,11 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       );
     });
 
+    if (!ref.mounted) return;
     state = OnboardingState(
-      petName: state.petName,
-      conditionFocus: state.conditionFocus,
-      step: state.step,
+      petName: petName,
+      conditionFocus: conditionFocus,
+      step: step,
       isComplete: true,
     );
   }

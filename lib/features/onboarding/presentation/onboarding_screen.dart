@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vitalpet/features/onboarding/onboarding_notifier.dart';
 import 'package:vitalpet/features/onboarding/presentation/widgets/pet_name_input.dart';
+import 'package:vitalpet/features/pet/domain/pet_notifier.dart';
 import 'package:vitalpet/presentation/theme/app_colors.dart';
 import 'package:vitalpet/presentation/theme/app_text_styles.dart';
 
@@ -25,14 +26,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _validatedName = '';
   String _conditionFocus = 'general_wellness';
   bool _completing = false;
+  static const _pageNames = [
+    'ProblemPage',
+    'MeetYourPetPage',
+    'NameYourPetPage',
+  ];
+
+  void _log(String message) {
+    debugPrint('[OnboardingScreen] $message');
+  }
+
+  String _pageNameFor(int index) {
+    if (index < 0 || index >= _pageNames.length) return 'UnknownPage($index)';
+    return _pageNames[index];
+  }
+
+  String _nextTargetFor(int index) {
+    if (index < _pageNames.length - 1) {
+      return _pageNameFor(index + 1);
+    }
+    return 'VulnerabilitySafeguardOverlay';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _log('Loading ${_pageNameFor(0)}. Next up: ${_nextTargetFor(0)}');
+  }
 
   @override
   void dispose() {
+    _log('Disposing OnboardingScreen');
     _pageController.dispose();
     super.dispose();
   }
 
   void _goToPage(int page) {
+    _log(
+      'Transition requested -> ${_pageNameFor(page)}. '
+      'Next up: ${_nextTargetFor(page)}',
+    );
     _pageController.animateToPage(
       page,
       duration: const Duration(milliseconds: 350),
@@ -42,6 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _skipToPage3() {
+    _log('Skip tapped -> ${_pageNameFor(2)}. Next up: ${_nextTargetFor(2)}');
     _pageController.animateToPage(
       2,
       duration: const Duration(milliseconds: 350),
@@ -51,13 +85,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _onLetsGo() async {
     if (_completing) return;
+    _log('Let\'s go tapped. Completing onboarding and creating pet row.');
     setState(() => _completing = true);
     await HapticFeedback.mediumImpact();
 
     ref.read(onboardingProvider.notifier).setPetName(_validatedName);
     ref.read(onboardingProvider.notifier).setConditionFocus(_conditionFocus);
     await ref.read(onboardingProvider.notifier).complete();
+    if (!mounted) return;
 
+    _log('Onboarding complete. Showing VulnerabilitySafeguardOverlay.');
     setState(() {
       _completing = false;
       _showVulnerabilityScreen = true;
@@ -65,8 +102,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _onGotIt() async {
+    _log('Got it tapped. Requesting notification permission.');
     await HapticFeedback.lightImpact();
     await _requestNotificationPermission();
+    ref.invalidate(petProvider);
+    await ref.read(petProvider.future);
+    _log('Pet provider refreshed. Navigating to /checkin next.');
     if (mounted) context.go('/checkin');
   }
 
@@ -77,10 +118,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           IOSFlutterLocalNotificationsPlugin
         >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
+    _log('Notification permission flow completed.');
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(onboardingProvider);
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: Stack(
@@ -88,6 +131,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           PageView(
             controller: _pageController,
             physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (index) {
+              _log(
+                'Loaded ${_pageNameFor(index)}. '
+                'Next up: ${_nextTargetFor(index)}',
+              );
+            },
             children: [
               _ProblemPage(
                 onGetStarted: () => _goToPage(1),
