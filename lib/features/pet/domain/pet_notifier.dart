@@ -77,7 +77,7 @@ class PetNotifier extends _$PetNotifier {
     detectMilestone(current.streak);
 
     final sparkline =
-        latestCheckins.map((c) => c.wellnessScore).toList();
+        latestCheckins.map((c) => c.overallStatus == 'great' ? 8 : 3).toList();
     await updateWidgetData(updated, sparkline);
   }
 

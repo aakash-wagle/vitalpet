@@ -36,7 +36,7 @@ class QuestionSequencer {
 
   String _buildPrompt(SLMContext context) {
     // TODO: load system prompt from config/slm_prompt.txt via rootBundle.
-    return 'wellness:${context.wellnessScore} '
+    return 'status:${context.overallStatus} '
         'domains:${context.activeDomains.join(",")}';
   }
 

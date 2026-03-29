@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:vitalpet/core/audit/audit_log_dao.dart';
+import 'package:vitalpet/core/constants/symptom_domains.dart';
 import 'package:vitalpet/core/database/app_database.dart';
 import 'package:vitalpet/features/check_in/data/check_in_dao.dart';
 import 'package:vitalpet/features/check_in/domain/check_in_session_state.dart';
 import 'package:vitalpet/features/check_in/domain/mode_selector.dart';
 import 'package:vitalpet/features/check_in/domain/question_answer.dart';
+import 'package:vitalpet/features/check_in/domain/symptom_data.dart';
 import 'package:vitalpet/features/health/health_adapter.dart';
 import 'package:vitalpet/features/pet/data/pet_dao.dart';
 import 'package:vitalpet/features/pet/domain/milestone_detector.dart';
@@ -24,13 +26,13 @@ class CompleteSessionResult {
     required this.state,
     required this.updatedPet,
     required this.milestone,
-    required this.wellnessScore,
+    required this.overallStatus,
   });
 
   final CheckInSessionState state;
   final PetState updatedPet;
   final MilestoneType? milestone;
-  final int wellnessScore;
+  final String overallStatus;
 }
 
 /// Orchestrates the full check-in session lifecycle.
@@ -54,6 +56,12 @@ class CheckInEngine {
 
   /// Loads health snapshot and transitions session to collectingScore.
   Future<CheckInSessionState> startSession() async {
+    // Check for existing partial session to resume
+    final partial = await checkInDao.findPartialToday();
+    if (partial != null) {
+      return _resumeFromPartial(partial);
+    }
+
     final now = DateTime.now();
     await healthAdapter.fetchSummary(
       start: now.subtract(const Duration(hours: 24)),
@@ -62,33 +70,159 @@ class CheckInEngine {
     return const CheckInSessionState.collectingScore();
   }
 
-  /// Determines mode from [score], fetches SLM questions for Mode 2/3.
-  Future<CheckInSessionState> submitWellnessScore(int score) async {
-    final mode = selectMode(score);
+  /// Resumes a partial check-in from the database.
+  Future<CheckInSessionState> _resumeFromPartial(CheckIn partial) async {
+    final answers = _decodeAnswers(partial.answersJson);
+    final symptoms = partial.symptomsJson.isNotEmpty
+        ? SymptomEntry.decodeList(partial.symptomsJson)
+        : <SymptomEntry>[];
+    final mode = selectMode(partial.overallStatus);
 
-    if (mode == CheckInMode.light) {
+    // Re-fetch questions for remaining flow
+    // Delete the old partial so we don't duplicate on save
+    await checkInDao.deletePartial(partial.id);
+
+    final slmCtx = SLMContext(
+      overallStatus: partial.overallStatus,
+      activeDomains: const ['fever', 'pain', 'fatigue', 'nausea', 'other'],
+      baselines: const {},
+    );
+    final output = await questionSequencer.sequence(slmCtx);
+
+    return CheckInSessionState.collectingAnswers(
+      overallStatus: partial.overallStatus,
+      mode: mode,
+      questions: output.questions,
+      currentIndex: answers.length,
+      answers: answers,
+      symptoms: symptoms,
+    );
+  }
+
+  /// Submits the overall status ("great" or "not_great").
+  /// If "great", goes straight to collectingAnswers with no questions.
+  /// If "not_great", goes to selectingSymptoms.
+  Future<CheckInSessionState> submitOverallStatus(String status) async {
+    if (status == 'great') {
       return CheckInSessionState.collectingAnswers(
-        wellnessScore: score,
-        mode: mode,
+        overallStatus: status,
+        mode: CheckInMode.light,
         questions: const [],
         currentIndex: 0,
         answers: const [],
       );
     }
 
-    final slmCtx = SLMContext(
-      wellnessScore: score,
-      activeDomains: const ['pain', 'fatigue', 'sleep', 'appetite', 'mood'],
-      baselines: const {},
-    );
-    final output = await questionSequencer.sequence(slmCtx);
+    return CheckInSessionState.selectingSymptoms(overallStatus: status);
+  }
 
-    return CheckInSessionState.collectingAnswers(
-      wellnessScore: score,
-      mode: mode,
-      questions: output.questions,
-      currentIndex: 0,
-      answers: const [],
+  /// User selected symptom categories — begin collecting details for each.
+  CheckInSessionState beginSymptomDetails(
+    String overallStatus,
+    List<SymptomCategory> categories,
+  ) {
+    if (categories.isEmpty) {
+      // No categories selected, skip to answers
+      return CheckInSessionState.collectingAnswers(
+        overallStatus: overallStatus,
+        mode: CheckInMode.standard,
+        questions: const [],
+        currentIndex: 0,
+        answers: const [],
+      );
+    }
+
+    return CheckInSessionState.collectingSymptomDetails(
+      overallStatus: overallStatus,
+      selectedCategories: categories,
+      currentCategoryIndex: 0,
+      collectedSymptoms: const [],
+      categoryStep: 0,
+      currentCategoryData: const {},
+    );
+  }
+
+  /// Submit an answer for the current symptom detail step.
+  /// Returns the next state (next step, next category, or done with symptoms).
+  Future<CheckInSessionState> submitSymptomDetail(
+    CheckInSessionState current,
+    String key,
+    dynamic value,
+  ) async {
+    final data = current.whenOrNull(
+      collectingSymptomDetails: (overallStatus, categories, catIdx,
+              collected, step, catData) =>
+          (
+            overallStatus: overallStatus,
+            categories: categories,
+            catIdx: catIdx,
+            collected: collected,
+            step: step,
+            catData: catData,
+          ),
+    );
+    if (data == null) {
+      throw StateError('submitSymptomDetail called in wrong state');
+    }
+
+    final updatedData = Map<String, dynamic>.from(data.catData)
+      ..[key] = value;
+    final category = data.categories[data.catIdx];
+    final totalSteps = _stepsForCategory(category);
+    final nextStep = data.step + 1;
+
+    if (nextStep >= totalSteps) {
+      // Finished this category — build SymptomEntry
+      final pattern = updatedData['pattern'] as String? ?? '';
+      final details = Map<String, dynamic>.from(updatedData)
+        ..remove('pattern');
+
+      final entry = SymptomEntry(
+        category: category,
+        pattern: pattern,
+        details: details,
+      );
+
+      final newCollected = [...data.collected, entry];
+      final nextCatIdx = data.catIdx + 1;
+
+      if (nextCatIdx >= data.categories.length) {
+        // All categories done — move to SLM questions or completion
+        final slmCtx = SLMContext(
+          overallStatus: data.overallStatus,
+          activeDomains:
+              data.categories.map((c) => c.name).toList(),
+          baselines: const {},
+        );
+        final output = await questionSequencer.sequence(slmCtx);
+
+        return CheckInSessionState.collectingAnswers(
+          overallStatus: data.overallStatus,
+          mode: CheckInMode.standard,
+          questions: output.questions,
+          currentIndex: 0,
+          answers: const [],
+          symptoms: newCollected,
+        );
+      }
+
+      return CheckInSessionState.collectingSymptomDetails(
+        overallStatus: data.overallStatus,
+        selectedCategories: data.categories,
+        currentCategoryIndex: nextCatIdx,
+        collectedSymptoms: newCollected,
+        categoryStep: 0,
+        currentCategoryData: const {},
+      );
+    }
+
+    return CheckInSessionState.collectingSymptomDetails(
+      overallStatus: data.overallStatus,
+      selectedCategories: data.categories,
+      currentCategoryIndex: data.catIdx,
+      collectedSymptoms: data.collected,
+      categoryStep: nextStep,
+      currentCategoryData: updatedData,
     );
   }
 
@@ -98,14 +232,15 @@ class CheckInEngine {
     QuestionAnswer answer,
   ) {
     return current.whenOrNull(
-          collectingAnswers: (wellnessScore, mode, questions, currentIndex,
-                  answers) =>
+          collectingAnswers: (overallStatus, mode, questions, currentIndex,
+                  answers, symptoms) =>
               CheckInSessionState.collectingAnswers(
-                wellnessScore: wellnessScore,
+                overallStatus: overallStatus,
                 mode: mode,
                 questions: questions,
                 currentIndex: currentIndex + 1,
                 answers: [...answers, answer],
+                symptoms: symptoms,
               ),
         ) ??
         (throw StateError('submitAnswer called in wrong state: $current'));
@@ -113,18 +248,39 @@ class CheckInEngine {
 
   /// Persists a partial session (isPartial=true) inside a DB transaction.
   Future<CheckInSessionState> savePartial(CheckInSessionState current) async {
-    final data = _requireCollecting(current, 'savePartial');
-    final sessionId = _sessionId(data.wellnessScore, data.answers);
-    final answersJson = _encodeAnswers(data.answers);
+    String overallStatus = 'great';
+    List<QuestionAnswer> answers = [];
+    List<SymptomEntry> symptoms = [];
+
+    current.whenOrNull(
+      collectingAnswers: (os, mode, questions, idx, ans, syms) {
+        overallStatus = os;
+        answers = ans;
+        symptoms = syms;
+      },
+      collectingSymptomDetails:
+          (os, categories, catIdx, collected, step, catData) {
+        overallStatus = os;
+        symptoms = collected;
+      },
+      selectingSymptoms: (os) {
+        overallStatus = os;
+      },
+    );
+
+    final sessionId = _sessionId(overallStatus, answers);
+    final answersJson = _encodeAnswers(answers);
+    final symptomsJson = SymptomEntry.encodeList(symptoms);
 
     await db.transaction(() async {
       await checkInDao.insertCheckIn(
         _buildCompanion(
           sessionId: sessionId,
-          wellnessScore: data.wellnessScore,
-          mode: data.mode,
+          overallStatus: overallStatus,
+          mode: selectMode(overallStatus),
           answersJson: answersJson,
-          depthScore: _depth(data.answers, data.questions),
+          symptomsJson: symptomsJson,
+          depthScore: 0.0,
           isPartial: true,
         ),
       );
@@ -137,40 +293,43 @@ class CheckInEngine {
     });
 
     return CheckInSessionState.partial(
-      wellnessScore: data.wellnessScore,
-      answers: data.answers,
-      savedAt: DateTime.now(),
-    );
-  }
-
-  /// Restores a partial session, resuming from where the user left off.
-  CheckInSessionState resumePartial({
-    required int wellnessScore,
-    required List<QuestionAnswer> answers,
-    required List<SLMQuestion> pendingQuestions,
-    required CheckInMode mode,
-  }) {
-    return CheckInSessionState.collectingAnswers(
-      wellnessScore: wellnessScore,
-      mode: mode,
-      questions: pendingQuestions,
-      currentIndex: answers.length,
+      overallStatus: overallStatus,
       answers: answers,
+      symptoms: symptoms,
+      savedAt: DateTime.now(),
     );
   }
 
   /// Atomically writes check-in, updates pet state, appends audit entry,
   /// and checks vulnerability safeguard.
-  ///
-  /// Returns [CompleteSessionResult] containing the new session state, updated
-  /// [PetState] (for widget update), wellness score, and any milestone.
-  /// The caller (notifier) is responsible for calling [updateWidgetData].
   Future<CompleteSessionResult> completeSession(
       CheckInSessionState current) async {
-    final data = _requireCollecting(current, 'completeSession');
-    final sessionId = _sessionId(data.wellnessScore, data.answers);
-    final answersJson = _encodeAnswers(data.answers);
-    final depthScore = _depth(data.answers, data.questions);
+    String overallStatus = 'great';
+    CheckInMode mode = CheckInMode.light;
+    List<SLMQuestion> questions = [];
+    List<QuestionAnswer> answers = [];
+    List<SymptomEntry> symptoms = [];
+
+    current.whenOrNull(
+      collectingAnswers: (os, m, qs, idx, ans, syms) {
+        overallStatus = os;
+        mode = m;
+        questions = qs;
+        answers = ans;
+        symptoms = syms;
+      },
+      collectingSymptomDetails:
+          (os, categories, catIdx, collected, step, catData) {
+        overallStatus = os;
+        mode = CheckInMode.standard;
+        symptoms = collected;
+      },
+    );
+
+    final sessionId = _sessionId(overallStatus, answers);
+    final answersJson = _encodeAnswers(answers);
+    final symptomsJson = SymptomEntry.encodeList(symptoms);
+    final depthScore = _depth(answers, questions);
 
     final petRow = await petDao.getPetState();
     if (petRow == null) {
@@ -181,8 +340,9 @@ class CheckInEngine {
     final utcDate = _isoDate(now);
     final isConsecutive = _isConsecutiveDay(petRow.lastCheckinUtc, utcDate);
     final newStreak = isConsecutive ? petRow.streak + 1 : 1;
+    final isNotGreat = overallStatus == 'not_great';
     final newBadDays =
-        data.wellnessScore <= 3 ? petRow.consecutiveBadDays + 1 : 0;
+        isNotGreat ? petRow.consecutiveBadDays + 1 : 0;
 
     final missedDays = _missedDays(petRow.lastCheckinUtc);
     final newVitality = calculateVitality(
@@ -197,9 +357,10 @@ class CheckInEngine {
       await checkInDao.insertCheckIn(
         _buildCompanion(
           sessionId: sessionId,
-          wellnessScore: data.wellnessScore,
-          mode: data.mode,
+          overallStatus: overallStatus,
+          mode: mode,
           answersJson: answersJson,
+          symptomsJson: symptomsJson,
           depthScore: depthScore,
           isPartial: false,
         ),
@@ -256,7 +417,7 @@ class CheckInEngine {
       ),
       updatedPet: updatedPet,
       milestone: milestone,
-      wellnessScore: data.wellnessScore,
+      overallStatus: overallStatus,
     );
   }
 
@@ -281,33 +442,19 @@ class CheckInEngine {
 
   // --- Private helpers ---
 
-  ({
-    int wellnessScore,
-    CheckInMode mode,
-    List<SLMQuestion> questions,
-    int currentIndex,
-    List<QuestionAnswer> answers,
-  }) _requireCollecting(CheckInSessionState state, String callerName) {
-    final data = state.whenOrNull(
-      collectingAnswers: (wellnessScore, mode, questions, currentIndex,
-              answers) =>
-          (
-            wellnessScore: wellnessScore,
-            mode: mode,
-            questions: questions,
-            currentIndex: currentIndex,
-            answers: answers,
-          ),
-    );
-    if (data == null) {
-      throw StateError('$callerName called in wrong state: $state');
-    }
-    return data;
+  int _stepsForCategory(SymptomCategory category) {
+    return switch (category) {
+      SymptomCategory.fever => 2, // temp+skipped, pattern
+      SymptomCategory.pain => 3,  // regions, type, pattern
+      SymptomCategory.fatigue => 2, // scope, pattern
+      SymptomCategory.nausea => 2, // vomiting+appetite, pattern
+      SymptomCategory.other => 1,   // free_text
+    };
   }
 
-  String _sessionId(int score, List<QuestionAnswer> answers) {
+  String _sessionId(String status, List<QuestionAnswer> answers) {
     final raw =
-        '${DateTime.now().toUtc().toIso8601String()}_${score}_${answers.length}';
+        '${DateTime.now().toUtc().toIso8601String()}_${status}_${answers.length}';
     return sha256.convert(utf8.encode(raw)).toString().substring(0, 16);
   }
 
@@ -316,6 +463,13 @@ class CheckInEngine {
   String _encodeAnswers(List<QuestionAnswer> answers) =>
       jsonEncode(answers.map((a) => a.toJson()).toList());
 
+  List<QuestionAnswer> _decodeAnswers(String json) {
+    final list = jsonDecode(json) as List;
+    return list
+        .map((e) => QuestionAnswer.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   String _isoDate(DateTime utc) =>
       '${utc.year.toString().padLeft(4, '0')}-'
       '${utc.month.toString().padLeft(2, '0')}-'
@@ -323,9 +477,10 @@ class CheckInEngine {
 
   CheckInsCompanion _buildCompanion({
     required String sessionId,
-    required int wellnessScore,
+    required String overallStatus,
     required CheckInMode mode,
     required String answersJson,
+    required String symptomsJson,
     required double depthScore,
     required bool isPartial,
   }) {
@@ -335,9 +490,10 @@ class CheckInEngine {
       id: sessionId,
       utcDate: _isoDate(now),
       localDate: _isoDate(local),
-      wellnessScore: wellnessScore,
+      overallStatus: overallStatus,
       mode: mode.index,
       answersJson: answersJson,
+      symptomsJson: Value(symptomsJson),
       depthScore: Value(depthScore),
       isPartial: Value(isPartial),
       createdAt: now.toIso8601String(),

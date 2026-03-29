@@ -1,18 +1,17 @@
-/// Check-in interaction mode, driven by the wellness score.
+/// Check-in interaction mode, driven by the overall status.
 enum CheckInMode {
-  /// Score 7–10: brief positive mode.
+  /// Status "great": brief positive mode.
   light,
 
-  /// Score 4–6: standard mode.
+  /// Status "not_great": standard mode with symptom collection.
   standard,
 
-  /// Score 1–3: companion / empathic mode with follow-up questions.
+  /// Status "not_great" with deep concerns: companion / empathic mode.
   companion,
 }
 
-/// Pure function — selects check-in mode from wellness score (1–10).
-CheckInMode selectMode(int score) {
-  if (score >= 7) return CheckInMode.light;
-  if (score >= 4) return CheckInMode.standard;
-  return CheckInMode.companion;
+/// Pure function — selects check-in mode from overall status.
+CheckInMode selectMode(String overallStatus) {
+  if (overallStatus == 'great') return CheckInMode.light;
+  return CheckInMode.standard;
 }

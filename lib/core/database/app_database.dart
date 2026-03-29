@@ -8,9 +8,20 @@ class CheckIns extends Table {
   TextColumn get id => text()();
   TextColumn get utcDate => text()();
   TextColumn get localDate => text()();
-  IntColumn get wellnessScore => integer()();
+  /// "great" or "not_great" — matches DATA_TO_COLLECT.md overall_status
+  TextColumn get overallStatus => text()();
+  IntColumn get streakDay => integer().withDefault(const Constant(0))();
   IntColumn get mode => integer()();
+  /// JSON-encoded symptoms array (category-specific symptom objects)
+  TextColumn get symptomsJson => text().withDefault(const Constant('[]'))();
+  /// JSON-encoded answers array (legacy question answers)
   TextColumn get answersJson => text()();
+  /// Free-text notes from the user at end of check-in
+  TextColumn get freeNotes => text().nullable()();
+  /// SLM-extracted tags from freeNotes
+  TextColumn get slmTagsJson => text().nullable()();
+  /// JSON-encoded follow-up conversation turns
+  TextColumn get followUpExchangesJson => text().nullable()();
   RealColumn get depthScore =>
       real().withDefault(const Constant(0.0))();
   BoolColumn get isPartial =>

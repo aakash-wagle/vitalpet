@@ -1,19 +1,63 @@
-/// Symptom domains loaded at runtime from assets/config/symptom_taxonomy.json.
-/// Keep in sync with that file — do not hardcode domain strings elsewhere.
-enum SymptomDomain {
+/// Symptom categories matching DATA_TO_COLLECT.md schema.
+/// Each category has its own set of fields and pattern values.
+enum SymptomCategory {
+  fever,
   pain,
   fatigue,
-  sleep,
-  appetite,
   nausea,
-  mood,
-  cognitive,
-  medication;
+  other;
 
-  static SymptomDomain fromString(String value) {
-    return SymptomDomain.values.firstWhere(
+  static SymptomCategory fromString(String value) {
+    return SymptomCategory.values.firstWhere(
       (d) => d.name == value,
-      orElse: () => throw ArgumentError('Unknown domain: $value'),
+      orElse: () => throw ArgumentError('Unknown category: $value'),
     );
   }
+
+  String get label => switch (this) {
+        fever => 'Fever',
+        pain => 'Pain',
+        fatigue => 'Fatigue',
+        nausea => 'Nausea / Vomiting',
+        other => 'Something else',
+      };
 }
+
+/// Pattern values per category (from DATA_TO_COLLECT.md).
+const feverPatterns = ['constant', 'intermittent', 'night_only'];
+const painPatterns = ['constant', 'comes_and_goes', 'worsening', 'improving'];
+const fatiguePatterns = [
+  'morning_only',
+  'afternoon_crash',
+  'all_day',
+  'post_exertion'
+];
+const nauseaPatterns = ['constant', 'after_eating', 'morning', 'wave_like'];
+
+/// Pain type values.
+const painTypes = [
+  'sharp',
+  'dull',
+  'throbbing',
+  'burning',
+  'cramping',
+  'aching'
+];
+
+/// Pain trigger values.
+const painTriggers = ['movement', 'eating', 'breathing', 'touch', 'none'];
+
+/// Fatigue scope values.
+const fatigueScopes = ['functional', 'wiped_out', 'debilitating'];
+
+/// Nausea vomit frequency values.
+const vomitFrequencies = ['once', 'few_times', 'persistent'];
+
+/// Appetite levels.
+const appetiteLevels = ['normal', 'reduced', 'none'];
+
+/// Dehydration signs.
+const dehydrationSigns = ['dry_mouth', 'dark_urine', 'dizziness'];
+
+/// Fever measurement methods.
+const feverMethods = ['oral', 'ear', 'forehead', 'other'];

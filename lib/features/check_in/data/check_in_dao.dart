@@ -66,6 +66,25 @@ class CheckInDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Find today's partial check-in (if any) for session resumption.
+  Future<CheckIn?> findPartialToday() async {
+    final now = DateTime.now().toUtc();
+    final dateStr =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    return (select(checkIns)
+          ..where((tbl) =>
+              tbl.utcDate.equals(dateStr) & tbl.isPartial.equals(true))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Delete a partial check-in by id (used when resuming and completing).
+  Future<void> deletePartial(String id) async {
+    await (delete(checkIns)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
   /// Return one [StreakDay] per calendar day over the last [days] UTC days,
   /// newest-first. A day is "completed" when a non-partial check-in exists.
   Future<List<StreakDay>> getStreakData(int days) async {

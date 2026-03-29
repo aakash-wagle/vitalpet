@@ -94,7 +94,7 @@ class ChartDataBuilder {
         points.add(TrendPoint(
           date: cursor,
           type: TrendPointType.normal,
-          score: ci.wellnessScore,
+          score: ci.overallStatus == 'great' ? 8 : 3,
           hasSymptoms: symptoms.isNotEmpty,
           hasFever: categories.contains('fever'),
           symptomCategoryCount: categories.length,
@@ -110,7 +110,10 @@ class ChartDataBuilder {
   /// Returns a map of "yyyy-MM-dd" → wellness score for every check-in.
   /// Days without a check-in are absent from the map (caller renders as grey).
   static Map<String, int?> buildHeatmap(List<CheckIn> checkIns) {
-    return {for (final ci in checkIns) ci.utcDate: ci.wellnessScore};
+    return {
+      for (final ci in checkIns)
+        ci.utcDate: ci.overallStatus == 'great' ? 8 : 3,
+    };
   }
 
   // ── Symptom frequency ─────────────────────────────────────────────────────

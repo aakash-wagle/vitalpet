@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:vitalpet/core/constants/symptom_domains.dart';
 import 'package:vitalpet/core/database/dao_providers.dart';
 import 'package:vitalpet/core/database/database_provider.dart';
 import 'package:vitalpet/features/check_in/domain/check_in_engine.dart';
@@ -27,17 +28,38 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     return const CheckInSessionState.idle();
   }
 
-  /// Opens a new check-in session: loads health snapshot, shows slider.
+  /// Opens a new check-in session (or resumes a partial one).
   Future<void> startSession() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _engine.startSession());
   }
 
-  /// Submits the wellness score and fetches SLM questions for Mode 2/3.
-  Future<void> submitWellnessScore(int score) async {
+  /// Submits the overall status ("great" or "not_great").
+  Future<void> submitOverallStatus(String status) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => _engine.submitWellnessScore(score),
+      () => _engine.submitOverallStatus(status),
+    );
+  }
+
+  /// User selected symptom categories — begin collecting details.
+  void selectSymptomCategories(List<SymptomCategory> categories) {
+    final current = state.value;
+    if (current == null) return;
+    final overallStatus = current.whenOrNull(
+          selectingSymptoms: (os) => os,
+        ) ??
+        'not_great';
+    state = AsyncData(_engine.beginSymptomDetails(overallStatus, categories));
+  }
+
+  /// Submit a symptom detail answer.
+  Future<void> submitSymptomDetail(String key, dynamic value) async {
+    final current = state.value;
+    if (current == null) return;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => _engine.submitSymptomDetail(current, key, value),
     );
   }
 
@@ -56,12 +78,6 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     state = await AsyncValue.guard(() => _engine.savePartial(current));
   }
 
-  /// Resumes a previously-partial session (called from HomeScreen).
-  Future<void> resumePartial() async {
-    // TODO: load partial check-in from DB, reconstruct SLM question list,
-    //       call _engine.resumePartial(...)
-  }
-
   /// Atomically writes the completed check-in and transitions to completed.
   Future<void> completeSession() async {
     final current = state.value;
@@ -69,10 +85,9 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final result = await _engine.completeSession(current);
-      // Widget update is a Flutter side-effect — done here, not in the engine.
       await updateWidgetData(
         result.updatedPet,
-        [result.wellnessScore],
+        [result.overallStatus == 'great' ? 8 : 3],
       );
       return result.state;
     });

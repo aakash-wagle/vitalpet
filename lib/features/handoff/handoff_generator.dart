@@ -81,7 +81,9 @@ class HandoffGenerator {
     final completed = checkIns.where((c) => !c.isPartial).length;
     final avgWellness = checkIns.isEmpty
         ? 0.0
-        : checkIns.map((c) => c.wellnessScore).reduce((a, b) => a + b) /
+        : checkIns
+                .map((c) => c.overallStatus == 'great' ? 8.0 : 3.0)
+                .reduce((a, b) => a + b) /
             checkIns.length;
     final trend = _computeTrend(trendPoints);
     final sortedDomains = (symptomFreq.entries.toList()

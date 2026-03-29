@@ -39,16 +39,28 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _wellnessScoreMeta = const VerificationMeta(
-    'wellnessScore',
+  static const VerificationMeta _overallStatusMeta = const VerificationMeta(
+    'overallStatus',
   );
   @override
-  late final GeneratedColumn<int> wellnessScore = GeneratedColumn<int>(
-    'wellness_score',
+  late final GeneratedColumn<String> overallStatus = GeneratedColumn<String>(
+    'overall_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _streakDayMeta = const VerificationMeta(
+    'streakDay',
+  );
+  @override
+  late final GeneratedColumn<int> streakDay = GeneratedColumn<int>(
+    'streak_day',
     aliasedName,
     false,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
@@ -58,6 +70,18 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _symptomsJsonMeta = const VerificationMeta(
+    'symptomsJson',
+  );
+  @override
+  late final GeneratedColumn<String> symptomsJson = GeneratedColumn<String>(
+    'symptoms_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
   );
   static const VerificationMeta _answersJsonMeta = const VerificationMeta(
     'answersJson',
@@ -70,6 +94,39 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _freeNotesMeta = const VerificationMeta(
+    'freeNotes',
+  );
+  @override
+  late final GeneratedColumn<String> freeNotes = GeneratedColumn<String>(
+    'free_notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _slmTagsJsonMeta = const VerificationMeta(
+    'slmTagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> slmTagsJson = GeneratedColumn<String>(
+    'slm_tags_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _followUpExchangesJsonMeta =
+      const VerificationMeta('followUpExchangesJson');
+  @override
+  late final GeneratedColumn<String> followUpExchangesJson =
+      GeneratedColumn<String>(
+        'follow_up_exchanges_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _depthScoreMeta = const VerificationMeta(
     'depthScore',
   );
@@ -124,9 +181,14 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     id,
     utcDate,
     localDate,
-    wellnessScore,
+    overallStatus,
+    streakDay,
     mode,
+    symptomsJson,
     answersJson,
+    freeNotes,
+    slmTagsJson,
+    followUpExchangesJson,
     depthScore,
     isPartial,
     amendedAt,
@@ -165,16 +227,22 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     } else if (isInserting) {
       context.missing(_localDateMeta);
     }
-    if (data.containsKey('wellness_score')) {
+    if (data.containsKey('overall_status')) {
       context.handle(
-        _wellnessScoreMeta,
-        wellnessScore.isAcceptableOrUnknown(
-          data['wellness_score']!,
-          _wellnessScoreMeta,
+        _overallStatusMeta,
+        overallStatus.isAcceptableOrUnknown(
+          data['overall_status']!,
+          _overallStatusMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_wellnessScoreMeta);
+      context.missing(_overallStatusMeta);
+    }
+    if (data.containsKey('streak_day')) {
+      context.handle(
+        _streakDayMeta,
+        streakDay.isAcceptableOrUnknown(data['streak_day']!, _streakDayMeta),
+      );
     }
     if (data.containsKey('mode')) {
       context.handle(
@@ -183,6 +251,15 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
       );
     } else if (isInserting) {
       context.missing(_modeMeta);
+    }
+    if (data.containsKey('symptoms_json')) {
+      context.handle(
+        _symptomsJsonMeta,
+        symptomsJson.isAcceptableOrUnknown(
+          data['symptoms_json']!,
+          _symptomsJsonMeta,
+        ),
+      );
     }
     if (data.containsKey('answers_json')) {
       context.handle(
@@ -194,6 +271,30 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
       );
     } else if (isInserting) {
       context.missing(_answersJsonMeta);
+    }
+    if (data.containsKey('free_notes')) {
+      context.handle(
+        _freeNotesMeta,
+        freeNotes.isAcceptableOrUnknown(data['free_notes']!, _freeNotesMeta),
+      );
+    }
+    if (data.containsKey('slm_tags_json')) {
+      context.handle(
+        _slmTagsJsonMeta,
+        slmTagsJson.isAcceptableOrUnknown(
+          data['slm_tags_json']!,
+          _slmTagsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('follow_up_exchanges_json')) {
+      context.handle(
+        _followUpExchangesJsonMeta,
+        followUpExchangesJson.isAcceptableOrUnknown(
+          data['follow_up_exchanges_json']!,
+          _followUpExchangesJsonMeta,
+        ),
+      );
     }
     if (data.containsKey('depth_score')) {
       context.handle(
@@ -242,18 +343,38 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
         DriftSqlType.string,
         data['${effectivePrefix}local_date'],
       )!,
-      wellnessScore: attachedDatabase.typeMapping.read(
+      overallStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}overall_status'],
+      )!,
+      streakDay: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}wellness_score'],
+        data['${effectivePrefix}streak_day'],
       )!,
       mode: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}mode'],
       )!,
+      symptomsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symptoms_json'],
+      )!,
       answersJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}answers_json'],
       )!,
+      freeNotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}free_notes'],
+      ),
+      slmTagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}slm_tags_json'],
+      ),
+      followUpExchangesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}follow_up_exchanges_json'],
+      ),
       depthScore: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}depth_score'],
@@ -283,9 +404,26 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
   final String id;
   final String utcDate;
   final String localDate;
-  final int wellnessScore;
+
+  /// "great" or "not_great" — matches DATA_TO_COLLECT.md overall_status
+  final String overallStatus;
+  final int streakDay;
   final int mode;
+
+  /// JSON-encoded symptoms array (category-specific symptom objects)
+  final String symptomsJson;
+
+  /// JSON-encoded answers array (legacy question answers)
   final String answersJson;
+
+  /// Free-text notes from the user at end of check-in
+  final String? freeNotes;
+
+  /// SLM-extracted tags from freeNotes
+  final String? slmTagsJson;
+
+  /// JSON-encoded follow-up conversation turns
+  final String? followUpExchangesJson;
   final double depthScore;
   final bool isPartial;
   final String? amendedAt;
@@ -294,9 +432,14 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     required this.id,
     required this.utcDate,
     required this.localDate,
-    required this.wellnessScore,
+    required this.overallStatus,
+    required this.streakDay,
     required this.mode,
+    required this.symptomsJson,
     required this.answersJson,
+    this.freeNotes,
+    this.slmTagsJson,
+    this.followUpExchangesJson,
     required this.depthScore,
     required this.isPartial,
     this.amendedAt,
@@ -308,9 +451,20 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     map['id'] = Variable<String>(id);
     map['utc_date'] = Variable<String>(utcDate);
     map['local_date'] = Variable<String>(localDate);
-    map['wellness_score'] = Variable<int>(wellnessScore);
+    map['overall_status'] = Variable<String>(overallStatus);
+    map['streak_day'] = Variable<int>(streakDay);
     map['mode'] = Variable<int>(mode);
+    map['symptoms_json'] = Variable<String>(symptomsJson);
     map['answers_json'] = Variable<String>(answersJson);
+    if (!nullToAbsent || freeNotes != null) {
+      map['free_notes'] = Variable<String>(freeNotes);
+    }
+    if (!nullToAbsent || slmTagsJson != null) {
+      map['slm_tags_json'] = Variable<String>(slmTagsJson);
+    }
+    if (!nullToAbsent || followUpExchangesJson != null) {
+      map['follow_up_exchanges_json'] = Variable<String>(followUpExchangesJson);
+    }
     map['depth_score'] = Variable<double>(depthScore);
     map['is_partial'] = Variable<bool>(isPartial);
     if (!nullToAbsent || amendedAt != null) {
@@ -325,9 +479,20 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       id: Value(id),
       utcDate: Value(utcDate),
       localDate: Value(localDate),
-      wellnessScore: Value(wellnessScore),
+      overallStatus: Value(overallStatus),
+      streakDay: Value(streakDay),
       mode: Value(mode),
+      symptomsJson: Value(symptomsJson),
       answersJson: Value(answersJson),
+      freeNotes: freeNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(freeNotes),
+      slmTagsJson: slmTagsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(slmTagsJson),
+      followUpExchangesJson: followUpExchangesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followUpExchangesJson),
       depthScore: Value(depthScore),
       isPartial: Value(isPartial),
       amendedAt: amendedAt == null && nullToAbsent
@@ -346,9 +511,16 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       id: serializer.fromJson<String>(json['id']),
       utcDate: serializer.fromJson<String>(json['utcDate']),
       localDate: serializer.fromJson<String>(json['localDate']),
-      wellnessScore: serializer.fromJson<int>(json['wellnessScore']),
+      overallStatus: serializer.fromJson<String>(json['overallStatus']),
+      streakDay: serializer.fromJson<int>(json['streakDay']),
       mode: serializer.fromJson<int>(json['mode']),
+      symptomsJson: serializer.fromJson<String>(json['symptomsJson']),
       answersJson: serializer.fromJson<String>(json['answersJson']),
+      freeNotes: serializer.fromJson<String?>(json['freeNotes']),
+      slmTagsJson: serializer.fromJson<String?>(json['slmTagsJson']),
+      followUpExchangesJson: serializer.fromJson<String?>(
+        json['followUpExchangesJson'],
+      ),
       depthScore: serializer.fromJson<double>(json['depthScore']),
       isPartial: serializer.fromJson<bool>(json['isPartial']),
       amendedAt: serializer.fromJson<String?>(json['amendedAt']),
@@ -362,9 +534,16 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       'id': serializer.toJson<String>(id),
       'utcDate': serializer.toJson<String>(utcDate),
       'localDate': serializer.toJson<String>(localDate),
-      'wellnessScore': serializer.toJson<int>(wellnessScore),
+      'overallStatus': serializer.toJson<String>(overallStatus),
+      'streakDay': serializer.toJson<int>(streakDay),
       'mode': serializer.toJson<int>(mode),
+      'symptomsJson': serializer.toJson<String>(symptomsJson),
       'answersJson': serializer.toJson<String>(answersJson),
+      'freeNotes': serializer.toJson<String?>(freeNotes),
+      'slmTagsJson': serializer.toJson<String?>(slmTagsJson),
+      'followUpExchangesJson': serializer.toJson<String?>(
+        followUpExchangesJson,
+      ),
       'depthScore': serializer.toJson<double>(depthScore),
       'isPartial': serializer.toJson<bool>(isPartial),
       'amendedAt': serializer.toJson<String?>(amendedAt),
@@ -376,9 +555,14 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     String? id,
     String? utcDate,
     String? localDate,
-    int? wellnessScore,
+    String? overallStatus,
+    int? streakDay,
     int? mode,
+    String? symptomsJson,
     String? answersJson,
+    Value<String?> freeNotes = const Value.absent(),
+    Value<String?> slmTagsJson = const Value.absent(),
+    Value<String?> followUpExchangesJson = const Value.absent(),
     double? depthScore,
     bool? isPartial,
     Value<String?> amendedAt = const Value.absent(),
@@ -387,9 +571,16 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     id: id ?? this.id,
     utcDate: utcDate ?? this.utcDate,
     localDate: localDate ?? this.localDate,
-    wellnessScore: wellnessScore ?? this.wellnessScore,
+    overallStatus: overallStatus ?? this.overallStatus,
+    streakDay: streakDay ?? this.streakDay,
     mode: mode ?? this.mode,
+    symptomsJson: symptomsJson ?? this.symptomsJson,
     answersJson: answersJson ?? this.answersJson,
+    freeNotes: freeNotes.present ? freeNotes.value : this.freeNotes,
+    slmTagsJson: slmTagsJson.present ? slmTagsJson.value : this.slmTagsJson,
+    followUpExchangesJson: followUpExchangesJson.present
+        ? followUpExchangesJson.value
+        : this.followUpExchangesJson,
     depthScore: depthScore ?? this.depthScore,
     isPartial: isPartial ?? this.isPartial,
     amendedAt: amendedAt.present ? amendedAt.value : this.amendedAt,
@@ -400,13 +591,24 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       id: data.id.present ? data.id.value : this.id,
       utcDate: data.utcDate.present ? data.utcDate.value : this.utcDate,
       localDate: data.localDate.present ? data.localDate.value : this.localDate,
-      wellnessScore: data.wellnessScore.present
-          ? data.wellnessScore.value
-          : this.wellnessScore,
+      overallStatus: data.overallStatus.present
+          ? data.overallStatus.value
+          : this.overallStatus,
+      streakDay: data.streakDay.present ? data.streakDay.value : this.streakDay,
       mode: data.mode.present ? data.mode.value : this.mode,
+      symptomsJson: data.symptomsJson.present
+          ? data.symptomsJson.value
+          : this.symptomsJson,
       answersJson: data.answersJson.present
           ? data.answersJson.value
           : this.answersJson,
+      freeNotes: data.freeNotes.present ? data.freeNotes.value : this.freeNotes,
+      slmTagsJson: data.slmTagsJson.present
+          ? data.slmTagsJson.value
+          : this.slmTagsJson,
+      followUpExchangesJson: data.followUpExchangesJson.present
+          ? data.followUpExchangesJson.value
+          : this.followUpExchangesJson,
       depthScore: data.depthScore.present
           ? data.depthScore.value
           : this.depthScore,
@@ -422,9 +624,14 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           ..write('id: $id, ')
           ..write('utcDate: $utcDate, ')
           ..write('localDate: $localDate, ')
-          ..write('wellnessScore: $wellnessScore, ')
+          ..write('overallStatus: $overallStatus, ')
+          ..write('streakDay: $streakDay, ')
           ..write('mode: $mode, ')
+          ..write('symptomsJson: $symptomsJson, ')
           ..write('answersJson: $answersJson, ')
+          ..write('freeNotes: $freeNotes, ')
+          ..write('slmTagsJson: $slmTagsJson, ')
+          ..write('followUpExchangesJson: $followUpExchangesJson, ')
           ..write('depthScore: $depthScore, ')
           ..write('isPartial: $isPartial, ')
           ..write('amendedAt: $amendedAt, ')
@@ -438,9 +645,14 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     id,
     utcDate,
     localDate,
-    wellnessScore,
+    overallStatus,
+    streakDay,
     mode,
+    symptomsJson,
     answersJson,
+    freeNotes,
+    slmTagsJson,
+    followUpExchangesJson,
     depthScore,
     isPartial,
     amendedAt,
@@ -453,9 +665,14 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           other.id == this.id &&
           other.utcDate == this.utcDate &&
           other.localDate == this.localDate &&
-          other.wellnessScore == this.wellnessScore &&
+          other.overallStatus == this.overallStatus &&
+          other.streakDay == this.streakDay &&
           other.mode == this.mode &&
+          other.symptomsJson == this.symptomsJson &&
           other.answersJson == this.answersJson &&
+          other.freeNotes == this.freeNotes &&
+          other.slmTagsJson == this.slmTagsJson &&
+          other.followUpExchangesJson == this.followUpExchangesJson &&
           other.depthScore == this.depthScore &&
           other.isPartial == this.isPartial &&
           other.amendedAt == this.amendedAt &&
@@ -466,9 +683,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   final Value<String> id;
   final Value<String> utcDate;
   final Value<String> localDate;
-  final Value<int> wellnessScore;
+  final Value<String> overallStatus;
+  final Value<int> streakDay;
   final Value<int> mode;
+  final Value<String> symptomsJson;
   final Value<String> answersJson;
+  final Value<String?> freeNotes;
+  final Value<String?> slmTagsJson;
+  final Value<String?> followUpExchangesJson;
   final Value<double> depthScore;
   final Value<bool> isPartial;
   final Value<String?> amendedAt;
@@ -478,9 +700,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     this.id = const Value.absent(),
     this.utcDate = const Value.absent(),
     this.localDate = const Value.absent(),
-    this.wellnessScore = const Value.absent(),
+    this.overallStatus = const Value.absent(),
+    this.streakDay = const Value.absent(),
     this.mode = const Value.absent(),
+    this.symptomsJson = const Value.absent(),
     this.answersJson = const Value.absent(),
+    this.freeNotes = const Value.absent(),
+    this.slmTagsJson = const Value.absent(),
+    this.followUpExchangesJson = const Value.absent(),
     this.depthScore = const Value.absent(),
     this.isPartial = const Value.absent(),
     this.amendedAt = const Value.absent(),
@@ -491,9 +718,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     required String id,
     required String utcDate,
     required String localDate,
-    required int wellnessScore,
+    required String overallStatus,
+    this.streakDay = const Value.absent(),
     required int mode,
+    this.symptomsJson = const Value.absent(),
     required String answersJson,
+    this.freeNotes = const Value.absent(),
+    this.slmTagsJson = const Value.absent(),
+    this.followUpExchangesJson = const Value.absent(),
     this.depthScore = const Value.absent(),
     this.isPartial = const Value.absent(),
     this.amendedAt = const Value.absent(),
@@ -502,7 +734,7 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   }) : id = Value(id),
        utcDate = Value(utcDate),
        localDate = Value(localDate),
-       wellnessScore = Value(wellnessScore),
+       overallStatus = Value(overallStatus),
        mode = Value(mode),
        answersJson = Value(answersJson),
        createdAt = Value(createdAt);
@@ -510,9 +742,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     Expression<String>? id,
     Expression<String>? utcDate,
     Expression<String>? localDate,
-    Expression<int>? wellnessScore,
+    Expression<String>? overallStatus,
+    Expression<int>? streakDay,
     Expression<int>? mode,
+    Expression<String>? symptomsJson,
     Expression<String>? answersJson,
+    Expression<String>? freeNotes,
+    Expression<String>? slmTagsJson,
+    Expression<String>? followUpExchangesJson,
     Expression<double>? depthScore,
     Expression<bool>? isPartial,
     Expression<String>? amendedAt,
@@ -523,9 +760,15 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
       if (id != null) 'id': id,
       if (utcDate != null) 'utc_date': utcDate,
       if (localDate != null) 'local_date': localDate,
-      if (wellnessScore != null) 'wellness_score': wellnessScore,
+      if (overallStatus != null) 'overall_status': overallStatus,
+      if (streakDay != null) 'streak_day': streakDay,
       if (mode != null) 'mode': mode,
+      if (symptomsJson != null) 'symptoms_json': symptomsJson,
       if (answersJson != null) 'answers_json': answersJson,
+      if (freeNotes != null) 'free_notes': freeNotes,
+      if (slmTagsJson != null) 'slm_tags_json': slmTagsJson,
+      if (followUpExchangesJson != null)
+        'follow_up_exchanges_json': followUpExchangesJson,
       if (depthScore != null) 'depth_score': depthScore,
       if (isPartial != null) 'is_partial': isPartial,
       if (amendedAt != null) 'amended_at': amendedAt,
@@ -538,9 +781,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     Value<String>? id,
     Value<String>? utcDate,
     Value<String>? localDate,
-    Value<int>? wellnessScore,
+    Value<String>? overallStatus,
+    Value<int>? streakDay,
     Value<int>? mode,
+    Value<String>? symptomsJson,
     Value<String>? answersJson,
+    Value<String?>? freeNotes,
+    Value<String?>? slmTagsJson,
+    Value<String?>? followUpExchangesJson,
     Value<double>? depthScore,
     Value<bool>? isPartial,
     Value<String?>? amendedAt,
@@ -551,9 +799,15 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
       id: id ?? this.id,
       utcDate: utcDate ?? this.utcDate,
       localDate: localDate ?? this.localDate,
-      wellnessScore: wellnessScore ?? this.wellnessScore,
+      overallStatus: overallStatus ?? this.overallStatus,
+      streakDay: streakDay ?? this.streakDay,
       mode: mode ?? this.mode,
+      symptomsJson: symptomsJson ?? this.symptomsJson,
       answersJson: answersJson ?? this.answersJson,
+      freeNotes: freeNotes ?? this.freeNotes,
+      slmTagsJson: slmTagsJson ?? this.slmTagsJson,
+      followUpExchangesJson:
+          followUpExchangesJson ?? this.followUpExchangesJson,
       depthScore: depthScore ?? this.depthScore,
       isPartial: isPartial ?? this.isPartial,
       amendedAt: amendedAt ?? this.amendedAt,
@@ -574,14 +828,31 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     if (localDate.present) {
       map['local_date'] = Variable<String>(localDate.value);
     }
-    if (wellnessScore.present) {
-      map['wellness_score'] = Variable<int>(wellnessScore.value);
+    if (overallStatus.present) {
+      map['overall_status'] = Variable<String>(overallStatus.value);
+    }
+    if (streakDay.present) {
+      map['streak_day'] = Variable<int>(streakDay.value);
     }
     if (mode.present) {
       map['mode'] = Variable<int>(mode.value);
     }
+    if (symptomsJson.present) {
+      map['symptoms_json'] = Variable<String>(symptomsJson.value);
+    }
     if (answersJson.present) {
       map['answers_json'] = Variable<String>(answersJson.value);
+    }
+    if (freeNotes.present) {
+      map['free_notes'] = Variable<String>(freeNotes.value);
+    }
+    if (slmTagsJson.present) {
+      map['slm_tags_json'] = Variable<String>(slmTagsJson.value);
+    }
+    if (followUpExchangesJson.present) {
+      map['follow_up_exchanges_json'] = Variable<String>(
+        followUpExchangesJson.value,
+      );
     }
     if (depthScore.present) {
       map['depth_score'] = Variable<double>(depthScore.value);
@@ -607,9 +878,14 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
           ..write('id: $id, ')
           ..write('utcDate: $utcDate, ')
           ..write('localDate: $localDate, ')
-          ..write('wellnessScore: $wellnessScore, ')
+          ..write('overallStatus: $overallStatus, ')
+          ..write('streakDay: $streakDay, ')
           ..write('mode: $mode, ')
+          ..write('symptomsJson: $symptomsJson, ')
           ..write('answersJson: $answersJson, ')
+          ..write('freeNotes: $freeNotes, ')
+          ..write('slmTagsJson: $slmTagsJson, ')
+          ..write('followUpExchangesJson: $followUpExchangesJson, ')
           ..write('depthScore: $depthScore, ')
           ..write('isPartial: $isPartial, ')
           ..write('amendedAt: $amendedAt, ')
@@ -2902,9 +3178,14 @@ typedef $$CheckInsTableCreateCompanionBuilder =
       required String id,
       required String utcDate,
       required String localDate,
-      required int wellnessScore,
+      required String overallStatus,
+      Value<int> streakDay,
       required int mode,
+      Value<String> symptomsJson,
       required String answersJson,
+      Value<String?> freeNotes,
+      Value<String?> slmTagsJson,
+      Value<String?> followUpExchangesJson,
       Value<double> depthScore,
       Value<bool> isPartial,
       Value<String?> amendedAt,
@@ -2916,9 +3197,14 @@ typedef $$CheckInsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> utcDate,
       Value<String> localDate,
-      Value<int> wellnessScore,
+      Value<String> overallStatus,
+      Value<int> streakDay,
       Value<int> mode,
+      Value<String> symptomsJson,
       Value<String> answersJson,
+      Value<String?> freeNotes,
+      Value<String?> slmTagsJson,
+      Value<String?> followUpExchangesJson,
       Value<double> depthScore,
       Value<bool> isPartial,
       Value<String?> amendedAt,
@@ -2950,8 +3236,13 @@ class $$CheckInsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get wellnessScore => $composableBuilder(
-    column: $table.wellnessScore,
+  ColumnFilters<String> get overallStatus => $composableBuilder(
+    column: $table.overallStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get streakDay => $composableBuilder(
+    column: $table.streakDay,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2960,8 +3251,28 @@ class $$CheckInsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get symptomsJson => $composableBuilder(
+    column: $table.symptomsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get answersJson => $composableBuilder(
     column: $table.answersJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get freeNotes => $composableBuilder(
+    column: $table.freeNotes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3010,8 +3321,13 @@ class $$CheckInsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get wellnessScore => $composableBuilder(
-    column: $table.wellnessScore,
+  ColumnOrderings<String> get overallStatus => $composableBuilder(
+    column: $table.overallStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get streakDay => $composableBuilder(
+    column: $table.streakDay,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3020,8 +3336,28 @@ class $$CheckInsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get symptomsJson => $composableBuilder(
+    column: $table.symptomsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get answersJson => $composableBuilder(
     column: $table.answersJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get freeNotes => $composableBuilder(
+    column: $table.freeNotes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3064,16 +3400,37 @@ class $$CheckInsTableAnnotationComposer
   GeneratedColumn<String> get localDate =>
       $composableBuilder(column: $table.localDate, builder: (column) => column);
 
-  GeneratedColumn<int> get wellnessScore => $composableBuilder(
-    column: $table.wellnessScore,
+  GeneratedColumn<String> get overallStatus => $composableBuilder(
+    column: $table.overallStatus,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get streakDay =>
+      $composableBuilder(column: $table.streakDay, builder: (column) => column);
 
   GeneratedColumn<int> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 
+  GeneratedColumn<String> get symptomsJson => $composableBuilder(
+    column: $table.symptomsJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get answersJson => $composableBuilder(
     column: $table.answersJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get freeNotes =>
+      $composableBuilder(column: $table.freeNotes, builder: (column) => column);
+
+  GeneratedColumn<String> get slmTagsJson => $composableBuilder(
+    column: $table.slmTagsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get followUpExchangesJson => $composableBuilder(
+    column: $table.followUpExchangesJson,
     builder: (column) => column,
   );
 
@@ -3123,9 +3480,14 @@ class $$CheckInsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> utcDate = const Value.absent(),
                 Value<String> localDate = const Value.absent(),
-                Value<int> wellnessScore = const Value.absent(),
+                Value<String> overallStatus = const Value.absent(),
+                Value<int> streakDay = const Value.absent(),
                 Value<int> mode = const Value.absent(),
+                Value<String> symptomsJson = const Value.absent(),
                 Value<String> answersJson = const Value.absent(),
+                Value<String?> freeNotes = const Value.absent(),
+                Value<String?> slmTagsJson = const Value.absent(),
+                Value<String?> followUpExchangesJson = const Value.absent(),
                 Value<double> depthScore = const Value.absent(),
                 Value<bool> isPartial = const Value.absent(),
                 Value<String?> amendedAt = const Value.absent(),
@@ -3135,9 +3497,14 @@ class $$CheckInsTableTableManager
                 id: id,
                 utcDate: utcDate,
                 localDate: localDate,
-                wellnessScore: wellnessScore,
+                overallStatus: overallStatus,
+                streakDay: streakDay,
                 mode: mode,
+                symptomsJson: symptomsJson,
                 answersJson: answersJson,
+                freeNotes: freeNotes,
+                slmTagsJson: slmTagsJson,
+                followUpExchangesJson: followUpExchangesJson,
                 depthScore: depthScore,
                 isPartial: isPartial,
                 amendedAt: amendedAt,
@@ -3149,9 +3516,14 @@ class $$CheckInsTableTableManager
                 required String id,
                 required String utcDate,
                 required String localDate,
-                required int wellnessScore,
+                required String overallStatus,
+                Value<int> streakDay = const Value.absent(),
                 required int mode,
+                Value<String> symptomsJson = const Value.absent(),
                 required String answersJson,
+                Value<String?> freeNotes = const Value.absent(),
+                Value<String?> slmTagsJson = const Value.absent(),
+                Value<String?> followUpExchangesJson = const Value.absent(),
                 Value<double> depthScore = const Value.absent(),
                 Value<bool> isPartial = const Value.absent(),
                 Value<String?> amendedAt = const Value.absent(),
@@ -3161,9 +3533,14 @@ class $$CheckInsTableTableManager
                 id: id,
                 utcDate: utcDate,
                 localDate: localDate,
-                wellnessScore: wellnessScore,
+                overallStatus: overallStatus,
+                streakDay: streakDay,
                 mode: mode,
+                symptomsJson: symptomsJson,
                 answersJson: answersJson,
+                freeNotes: freeNotes,
+                slmTagsJson: slmTagsJson,
+                followUpExchangesJson: followUpExchangesJson,
                 depthScore: depthScore,
                 isPartial: isPartial,
                 amendedAt: amendedAt,

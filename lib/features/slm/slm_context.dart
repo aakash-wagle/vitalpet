@@ -8,12 +8,15 @@ part 'slm_context.g.dart';
 @freezed
 abstract class SLMContext with _$SLMContext {
   const factory SLMContext({
-    required int wellnessScore,
+    /// "great" or "not_great" — matches DATA_TO_COLLECT.md
+    required String overallStatus,
     required List<String> activeDomains,
     required Map<String, double> baselines,
     @Default([]) List<String> recentAnswerSummaries,
     String? conditionFocus,
     String? healthContextSummary,
+    // Keep wellnessScore for backward compat with SLM prompt
+    @Default(5) int wellnessScore,
   }) = _SLMContext;
 
   factory SLMContext.fromJson(Map<String, dynamic> json) =>

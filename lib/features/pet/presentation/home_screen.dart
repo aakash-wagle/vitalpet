@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vitalpet/core/database/dao_providers.dart';
+import 'package:vitalpet/features/pet/domain/mood_tracker.dart';
 import 'package:vitalpet/features/pet/domain/pet_notifier.dart';
 import 'package:vitalpet/features/pet/domain/pet_state.dart';
 import 'package:vitalpet/features/pet/presentation/widgets/deviation_alert_card.dart';
@@ -9,6 +11,13 @@ import 'package:vitalpet/features/pet/presentation/widgets/streak_badge.dart';
 import 'package:vitalpet/presentation/theme/app_colors.dart';
 import 'package:vitalpet/presentation/theme/app_text_styles.dart';
 import 'package:vitalpet/presentation/widgets/vulnerability_card.dart';
+
+/// Provider for mood analysis — refreshes when check-in data changes.
+final moodAnalysisProvider = FutureProvider<MoodAnalysis>((ref) async {
+  final checkInDao = ref.watch(checkInDaoProvider);
+  const tracker = MoodTracker();
+  return tracker.analyze(checkInDao);
+});
 
 /// Time-of-day index for background gradient selection.
 /// 0=morning(6–10), 1=day(11–17), 2=evening(18–21), 3=night.
@@ -30,8 +39,8 @@ const _gradients = [
   [Color(0xFF1A237E), Color(0xFF004D40)],
 ];
 
-/// The main home screen: pet centred in a time-of-day gradient, streak,
-/// deviation alert, doctor handoff button, and a FAB to start a check-in.
+/// The main home screen: pet centred in a time-of-day gradient, mood-based
+/// affirmations, streak, and a FAB to start a check-in.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -39,9 +48,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final petAsync = ref.watch(petProvider);
 
-    // React to pet state transitions (dead or deleted) by navigating away.
-    // When Calm Mode is on the death screen is hidden — the pet's demise is
-    // handled silently and the user sees only the streak-focused home UI.
     ref.listen<AsyncValue<PetState?>>(petProvider, (_, next) {
       next.whenData((pet) {
         if (pet == null) {
@@ -63,7 +69,6 @@ class HomeScreen extends ConsumerWidget {
       ),
       data: (pet) {
         if (pet == null) {
-          // Initial render before ref.listen redirects — show blank slate.
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go('/onboarding');
           });
@@ -81,17 +86,18 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends ConsumerWidget {
   const _HomeContent({required this.pet});
 
   final PetState pet;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hour = TimeOfDay.now().hour;
     final todIndex = _timeOfDayIndex(hour);
     final gradientColors = _gradients[todIndex];
     final isNight = todIndex == 3;
+    final moodAsync = ref.watch(moodAnalysisProvider);
 
     return Scaffold(
       backgroundColor: gradientColors[0],
@@ -127,7 +133,25 @@ class _HomeContent extends StatelessWidget {
                       children: [
                         const SizedBox(height: 16),
                         _PetSection(pet: pet),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
+                        // Mood-based affirmation card
+                        moodAsync.when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                          data: (mood) => _MoodCard(
+                            mood: mood,
+                            isNight: isNight,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Recent mood visualization
+                        moodAsync.when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                          data: (mood) => mood.recentStatuses.isNotEmpty
+                              ? _MoodTimeline(statuses: mood.recentStatuses)
+                              : const SizedBox.shrink(),
+                        ),
                         if (pet.calmMode)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
@@ -158,6 +182,179 @@ class _HomeContent extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Mood-based affirmation card
+// ---------------------------------------------------------------------------
+
+class _MoodCard extends StatelessWidget {
+  const _MoodCard({required this.mood, required this.isNight});
+
+  final MoodAnalysis mood;
+  final bool isNight;
+
+  Color get _accentColor => switch (mood.trend) {
+        MoodTrend.improvingFromBad => const Color(0xFF43A047), // green
+        MoodTrend.decliningFromGood => const Color(0xFFFF8F00), // amber
+        MoodTrend.consistentlyGood => const Color(0xFF1E88E5), // blue
+        MoodTrend.consistentlyBad => const Color(0xFFE53935), // red
+        MoodTrend.neutral => AppColors.primary,
+      };
+
+  IconData get _icon => switch (mood.trend) {
+        MoodTrend.improvingFromBad => Icons.trending_up,
+        MoodTrend.decliningFromGood => Icons.favorite,
+        MoodTrend.consistentlyGood => Icons.celebration,
+        MoodTrend.consistentlyBad => Icons.self_improvement,
+        MoodTrend.neutral => Icons.wb_sunny,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isNight
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _accentColor.withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_icon, color: _accentColor, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  mood.phrase,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: isNight ? Colors.white : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            mood.subPhrase,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: isNight ? Colors.white70 : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mood timeline — dots showing recent check-in statuses
+// ---------------------------------------------------------------------------
+
+class _MoodTimeline extends StatelessWidget {
+  const _MoodTimeline({required this.statuses});
+
+  final List<String> statuses;
+
+  @override
+  Widget build(BuildContext context) {
+    // Reverse so oldest is on the left
+    final ordered = statuses.reversed.toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent days',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < ordered.length; i++) ...[
+                if (i > 0)
+                  Container(
+                    width: 24,
+                    height: 2,
+                    color: AppColors.textTertiary.withValues(alpha: 0.3),
+                  ),
+                _MoodDot(
+                  status: ordered[i],
+                  label: i == ordered.length - 1
+                      ? 'Today'
+                      : '${ordered.length - i - 1}d ago',
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoodDot extends StatelessWidget {
+  const _MoodDot({required this.status, required this.label});
+
+  final String status;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isGreat = status == 'great';
+    final color = isGreat ? AppColors.success : AppColors.warning;
+    final icon = isGreat ? Icons.sentiment_very_satisfied : Icons.sentiment_dissatisfied;
+
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 2),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Existing widgets (unchanged)
+// ---------------------------------------------------------------------------
 
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.isNight});
