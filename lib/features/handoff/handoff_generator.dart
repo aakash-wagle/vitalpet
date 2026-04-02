@@ -15,6 +15,7 @@ import 'package:vitalpet/features/handoff/handoff_providers.dart';
 import 'package:vitalpet/features/handoff/narrative_context.dart';
 import 'package:vitalpet/features/health/health_adapter.dart';
 import 'package:vitalpet/features/slm/narrative_generator.dart';
+import 'package:flutter/services.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,12 @@ class HandoffGenerator {
     required int dayCount,
     required WidgetRef ref,
   }) async {
+    final regular = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
+    final bold = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'));
+    final italic = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Italic.ttf'));
+    final boldItalic = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-BoldItalic.ttf'));
+    final handoffPdfTheme = pw.ThemeData.withFont(base: regular, bold: bold, italic: italic, boldItalic: boldItalic);
+    
     final now = DateTime.now().toUtc();
     final endDay = DateTime(now.year, now.month, now.day);
     final startDay = endDay.subtract(Duration(days: dayCount - 1));
