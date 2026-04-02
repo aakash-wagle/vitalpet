@@ -7,6 +7,7 @@ import 'package:vitalpet/features/check_in/domain/check_in_session_notifier.dart
 import 'package:vitalpet/features/check_in/domain/check_in_session_state.dart';
 import 'package:vitalpet/features/check_in/domain/mode_selector.dart';
 import 'package:vitalpet/features/check_in/domain/question_answer.dart';
+import 'package:vitalpet/features/check_in/domain/symptom_data.dart';
 import 'package:vitalpet/features/check_in/presentation/widgets/companion_bubble.dart';
 import 'package:vitalpet/features/check_in/presentation/widgets/question_card.dart';
 import 'package:vitalpet/features/pet/domain/milestone_detector.dart';
@@ -144,6 +145,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen>
               questions: s.questions,
               currentIndex: s.currentIndex,
               answers: s.answers,
+              symptoms: s.symptoms,
             ),
       partial: (s) => _PartialSavedBody(savedAt: s.savedAt),
       completing: (_) => const Center(child: CircularProgressIndicator()),
@@ -245,19 +247,9 @@ class _OverallStatusBodyState extends ConsumerState<_OverallStatusBody> {
           // Text input alternative
           _TextInputAlternative(
             hint: 'Or tell us how you feel...',
-            onSubmit: (text) {
-              final lower = text.toLowerCase();
-              final isGreat =
-                  lower.contains('great') ||
-                  lower.contains('good') ||
-                  lower.contains('fine') ||
-                  lower.contains('amazing') ||
-                  lower.contains('wonderful') ||
-                  lower.contains('better');
-              ref
-                  .read(checkInSessionProvider.notifier)
-                  .submitOverallStatus(isGreat ? 'great' : 'not_great');
-            },
+            onSubmit: (text) => ref
+                .read(checkInSessionProvider.notifier)
+                .submitOverallStatusFromText(text),
           ),
           const Spacer(),
         ],
@@ -1135,6 +1127,7 @@ class _GuidedBody extends ConsumerWidget {
     required this.questions,
     required this.currentIndex,
     required this.answers,
+    required this.symptoms,
   });
 
   final String overallStatus;
@@ -1142,10 +1135,13 @@ class _GuidedBody extends ConsumerWidget {
   final List<SLMQuestion> questions;
   final int currentIndex;
   final List<QuestionAnswer> answers;
+  final List<SymptomEntry> symptoms;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDone = currentIndex >= questions.length;
+    final isExtractedReview =
+        questions.isEmpty && answers.isEmpty && symptoms.isNotEmpty;
 
     return Column(
       children: [
@@ -1154,7 +1150,17 @@ class _GuidedBody extends ConsumerWidget {
           total: questions.isEmpty ? 1 : questions.length,
         ),
         Expanded(
-          child: isDone
+          child: isExtractedReview
+              ? _ExtractedSymptomsReview(
+                  symptoms: symptoms,
+                  onConfirm: () => ref
+                      .read(checkInSessionProvider.notifier)
+                      .completeSession(),
+                  onManual: () => ref
+                      .read(checkInSessionProvider.notifier)
+                      .submitOverallStatus('not_great'),
+                )
+              : isDone
               ? _AllAnsweredPrompt(
                   onDone: () => ref
                       .read(checkInSessionProvider.notifier)
@@ -1172,13 +1178,14 @@ class _GuidedBody extends ConsumerWidget {
                   ),
                 ),
         ),
-        _ActionFooter(
-          onSavePartial: () =>
-              ref.read(checkInSessionProvider.notifier).savePartial(),
-          onDone: () =>
-              ref.read(checkInSessionProvider.notifier).completeSession(),
-          showSavePartial: true,
-        ),
+        if (!isExtractedReview)
+          _ActionFooter(
+            onSavePartial: () =>
+                ref.read(checkInSessionProvider.notifier).savePartial(),
+            onDone: () =>
+                ref.read(checkInSessionProvider.notifier).completeSession(),
+            showSavePartial: true,
+          ),
       ],
     );
   }
@@ -1300,6 +1307,160 @@ class _UserAnswerBubble extends StatelessWidget {
     final v = a.value;
     if (v is List) return v.join(', ');
     return v?.toString() ?? '';
+  }
+}
+
+class _ExtractedSymptomsReview extends StatelessWidget {
+  const _ExtractedSymptomsReview({
+    required this.symptoms,
+    required this.onConfirm,
+    required this.onManual,
+  });
+
+  final List<SymptomEntry> symptoms;
+  final VoidCallback onConfirm;
+  final VoidCallback onManual;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.auto_awesome, size: 42, color: AppColors.primary),
+          const SizedBox(height: 12),
+          const Text(
+            'We recorded these symptoms',
+            style: AppTextStyles.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Please confirm this summary. You can switch to manual selection if needed.',
+            style: AppTextStyles.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ...symptoms.map(
+            (symptom) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _SymptomSummaryTile(symptom: symptom),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: onConfirm,
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Looks good, check me in'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton(
+              onPressed: onManual,
+              child: const Text('Choose manually'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SymptomSummaryTile extends StatelessWidget {
+  const _SymptomSummaryTile({required this.symptom});
+
+  final SymptomEntry symptom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.textTertiary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(symptom.category.label, style: AppTextStyles.labelLarge),
+          const SizedBox(height: 4),
+          Text(_summaryText(symptom), style: AppTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  String _summaryText(SymptomEntry symptom) {
+    String titleCase(String value) => value
+        .split('_')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+
+    final d = symptom.details;
+    return switch (symptom.category) {
+      SymptomCategory.fever => (() {
+        final temp = d['temperature'];
+        final unit = d['unit'];
+        final reading = (temp != null && unit != null)
+            ? 'Temperature $temp°$unit'
+            : (d['skipped'] == true
+                  ? 'No thermometer reading'
+                  : 'Fever reported');
+        return '$reading • Pattern: ${titleCase(symptom.pattern)}';
+      })(),
+      SymptomCategory.pain => (() {
+        final regions = d['regions'] is List
+            ? (d['regions'] as List).map((e) => e.toString()).join(', ')
+            : null;
+        final type = d['type']?.toString();
+        final parts = <String>[
+          if (regions != null && regions.isNotEmpty) 'Areas: $regions',
+          if (type != null && type.isNotEmpty) 'Type: ${titleCase(type)}',
+          'Pattern: ${titleCase(symptom.pattern)}',
+        ];
+        return parts.join(' • ');
+      })(),
+      SymptomCategory.fatigue => (() {
+        final scope = d['scope']?.toString();
+        final blocks = d['blocks_daily'] == true
+            ? 'Blocks daily activities'
+            : null;
+        final parts = <String>[
+          if (scope != null && scope.isNotEmpty)
+            'Severity: ${titleCase(scope)}',
+          if (blocks != null) blocks,
+          'Pattern: ${titleCase(symptom.pattern)}',
+        ];
+        return parts.join(' • ');
+      })(),
+      SymptomCategory.nausea => (() {
+        final vomiting = d['vomiting'];
+        final vomitFreq = d['vomit_freq']?.toString();
+        final appetite = d['appetite']?.toString();
+        final parts = <String>[
+          if (vomiting != null)
+            vomiting == true ? 'Vomiting: yes' : 'Vomiting: no',
+          if (vomitFreq != null && vomitFreq.isNotEmpty)
+            'Frequency: ${titleCase(vomitFreq)}',
+          if (appetite != null && appetite.isNotEmpty)
+            'Appetite: ${titleCase(appetite)}',
+          'Pattern: ${titleCase(symptom.pattern)}',
+        ];
+        return parts.join(' • ');
+      })(),
+      SymptomCategory.other =>
+        d['free_text']?.toString().trim().isNotEmpty == true
+            ? d['free_text'].toString().trim()
+            : 'General symptoms reported',
+    };
   }
 }
 

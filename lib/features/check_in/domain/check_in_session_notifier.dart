@@ -6,7 +6,9 @@ import 'package:vitalpet/core/database/dao_providers.dart';
 import 'package:vitalpet/core/database/database_provider.dart';
 import 'package:vitalpet/features/check_in/domain/check_in_engine.dart';
 import 'package:vitalpet/features/check_in/domain/check_in_session_state.dart';
+import 'package:vitalpet/features/check_in/domain/mode_selector.dart';
 import 'package:vitalpet/features/check_in/domain/question_answer.dart';
+import 'package:vitalpet/features/check_in/domain/symptom_data.dart';
 import 'package:vitalpet/features/check_in/domain/symptom_text_to_json_action.dart';
 import 'package:vitalpet/features/health/health_adapter.dart';
 import 'package:vitalpet/features/pet/domain/widget_data_writer.dart';
@@ -47,6 +49,32 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     state = await AsyncValue.guard(() => _engine.submitOverallStatus(status));
   }
 
+  /// Submits free-form overall-status text.
+  ///
+  /// - "great/good/fine..." text goes down the normal "great" path.
+  /// - everything else is treated as "not_great" and parsed for symptoms.
+  Future<void> submitOverallStatusFromText(String text) async {
+    final lower = text.trim().toLowerCase();
+    final isGreat =
+        lower.contains('great') ||
+        lower.contains('good') ||
+        lower.contains('fine') ||
+        lower.contains('amazing') ||
+        lower.contains('wonderful') ||
+        lower.contains('better');
+
+    if (isGreat) {
+      await submitOverallStatus('great');
+      return;
+    }
+
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () =>
+          _extractOrFallbackToSelection(overallStatus: 'not_great', text: text),
+    );
+  }
+
   /// User selected symptom categories — begin collecting details.
   void selectSymptomCategories(List<SymptomCategory> categories) {
     final current = state.value;
@@ -66,31 +94,10 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
     if (overallStatus == null) return;
 
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      try {
-        final jsonObject = await _symptomTextAction.extractSymptomsJsonObject(
-          text,
-        );
-        final decoded = jsonDecode(jsonObject);
-        if (decoded is! Map<String, dynamic>) {
-          throw const FormatException(
-            'Structured symptom output was not a JSON object',
-          );
-        }
-
-        final symptoms = SymptomTextToJsonAction.decodeSymptomsFromJsonObject(
-          jsonObject,
-        );
-        if (symptoms.isEmpty) {
-          throw const FormatException('No symptoms extracted');
-        }
-
-        return _engine.beginFromStructuredSymptoms(overallStatus, symptoms);
-      } catch (_) {
-        final fallback = _fallbackCategoriesFromText(text);
-        return _engine.beginSymptomDetails(overallStatus, fallback);
-      }
-    });
+    state = await AsyncValue.guard(
+      () =>
+          _extractOrFallbackToManual(overallStatus: overallStatus, text: text),
+    );
   }
 
   /// Submit a symptom detail answer.
@@ -147,6 +154,65 @@ class CheckInSessionNotifier extends _$CheckInSessionNotifier {
   /// Resets to idle after the completion animation has finished.
   void reset() {
     state = const AsyncData(CheckInSessionState.idle());
+  }
+
+  Future<CheckInSessionState> _extractOrFallbackToSelection({
+    required String overallStatus,
+    required String text,
+  }) async {
+    try {
+      final symptoms = await _extractSymptoms(text);
+      return _reviewState(overallStatus: overallStatus, symptoms: symptoms);
+    } catch (_) {
+      return CheckInSessionState.selectingSymptoms(
+        overallStatus: overallStatus,
+      );
+    }
+  }
+
+  Future<CheckInSessionState> _extractOrFallbackToManual({
+    required String overallStatus,
+    required String text,
+  }) async {
+    try {
+      final symptoms = await _extractSymptoms(text);
+      return _reviewState(overallStatus: overallStatus, symptoms: symptoms);
+    } catch (_) {
+      final fallback = _fallbackCategoriesFromText(text);
+      return _engine.beginSymptomDetails(overallStatus, fallback);
+    }
+  }
+
+  Future<List<SymptomEntry>> _extractSymptoms(String text) async {
+    final jsonObject = await _symptomTextAction.extractSymptomsJsonObject(text);
+    final decoded = jsonDecode(jsonObject);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Structured symptom output was not a JSON object',
+      );
+    }
+
+    final symptoms = SymptomTextToJsonAction.decodeSymptomsFromJsonObject(
+      jsonObject,
+    );
+    if (symptoms.isEmpty) {
+      throw const FormatException('No symptoms extracted');
+    }
+    return symptoms;
+  }
+
+  CheckInSessionState _reviewState({
+    required String overallStatus,
+    required List<SymptomEntry> symptoms,
+  }) {
+    return CheckInSessionState.collectingAnswers(
+      overallStatus: overallStatus,
+      mode: CheckInMode.standard,
+      questions: const [],
+      currentIndex: 0,
+      answers: const [],
+      symptoms: symptoms,
+    );
   }
 
   List<SymptomCategory> _fallbackCategoriesFromText(String text) {

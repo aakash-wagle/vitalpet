@@ -15,15 +15,23 @@ enum MoodTrend {
 class MoodAnalysis {
   const MoodAnalysis({
     required this.trend,
-    required this.recentStatuses,
+    required this.recentCheckins,
     required this.phrase,
     required this.subPhrase,
   });
 
   final MoodTrend trend;
-  final List<String> recentStatuses;
+  final List<MoodPoint> recentCheckins;
   final String phrase;
   final String subPhrase;
+}
+
+/// A lightweight point used by the home timeline.
+class MoodPoint {
+  const MoodPoint({required this.status, required this.daysAgo});
+
+  final String status;
+  final int daysAgo;
 }
 
 /// Analyzes mood from the last 2-3 days of check-ins and selects phrases.
@@ -37,14 +45,24 @@ class MoodTracker {
     if (recent.isEmpty) {
       return MoodAnalysis(
         trend: MoodTrend.neutral,
-        recentStatuses: [],
+        recentCheckins: const [],
         phrase: _pickRandom(_welcomePhrases),
         subPhrase: _pickRandom(_welcomeSubPhrases),
       );
     }
 
-    final statuses =
-        recent.map((c) => c.overallStatus).toList();
+    final today = DateTime.now().toUtc();
+    final todayUtc = DateTime.utc(today.year, today.month, today.day);
+    final points = recent.map((c) {
+      final parsedDate = DateTime.tryParse(c.utcDate)?.toUtc();
+      final day = parsedDate != null
+          ? DateTime.utc(parsedDate.year, parsedDate.month, parsedDate.day)
+          : todayUtc;
+      final daysAgo = todayUtc.difference(day).inDays.clamp(0, 1000000);
+      return MoodPoint(status: c.overallStatus, daysAgo: daysAgo);
+    }).toList();
+
+    final statuses = points.map((p) => p.status).toList();
 
     final trend = _detectTrend(statuses);
 
@@ -66,7 +84,7 @@ class MoodTracker {
 
     return MoodAnalysis(
       trend: trend,
-      recentStatuses: statuses,
+      recentCheckins: points,
       phrase: _pickRandom(phrases),
       subPhrase: _pickRandom(subPhrases),
     );
