@@ -22,11 +22,11 @@ final moodAnalysisProvider = FutureProvider<MoodAnalysis>((ref) async {
 /// Time-of-day index for background gradient selection.
 /// 0=morning(6–10), 1=day(11–17), 2=evening(18–21), 3=night.
 int _timeOfDayIndex(int hour) => switch (hour) {
-      >= 6 && < 11 => 0,
-      >= 11 && < 18 => 1,
-      >= 18 && < 22 => 2,
-      _ => 3,
-    };
+  >= 6 && < 11 => 0,
+  >= 11 && < 18 => 1,
+  >= 18 && < 22 => 2,
+  _ => 3,
+};
 
 const _gradients = [
   // Morning — warm amber to light teal
@@ -59,14 +59,10 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return petAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => const Scaffold(
-        body: Center(
-          child: Text('Something went wrong'),
-        ),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) =>
+          const Scaffold(body: Center(child: Text('Something went wrong'))),
       data: (pet) {
         if (pet == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -138,18 +134,16 @@ class _HomeContent extends ConsumerWidget {
                         moodAsync.when(
                           loading: () => const SizedBox.shrink(),
                           error: (_, __) => const SizedBox.shrink(),
-                          data: (mood) => _MoodCard(
-                            mood: mood,
-                            isNight: isNight,
-                          ),
+                          data: (mood) =>
+                              _MoodCard(mood: mood, isNight: isNight),
                         ),
                         const SizedBox(height: 16),
                         // Recent mood visualization
                         moodAsync.when(
                           loading: () => const SizedBox.shrink(),
                           error: (_, __) => const SizedBox.shrink(),
-                          data: (mood) => mood.recentStatuses.isNotEmpty
-                              ? _MoodTimeline(statuses: mood.recentStatuses)
+                          data: (mood) => mood.recentCheckins.isNotEmpty
+                              ? _MoodTimeline(points: mood.recentCheckins)
                               : const SizedBox.shrink(),
                         ),
                         if (pet.calmMode)
@@ -166,7 +160,8 @@ class _HomeContent extends ConsumerWidget {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
                             child: DeviationAlertCard(
-                                alerts: pet.pendingAlerts),
+                              alerts: pet.pendingAlerts,
+                            ),
                           ),
                         _DoctorHandoffButton(petName: pet.name),
                         const SizedBox(height: 80), // FAB clearance
@@ -194,20 +189,20 @@ class _MoodCard extends StatelessWidget {
   final bool isNight;
 
   Color get _accentColor => switch (mood.trend) {
-        MoodTrend.improvingFromBad => const Color(0xFF43A047), // green
-        MoodTrend.decliningFromGood => const Color(0xFFFF8F00), // amber
-        MoodTrend.consistentlyGood => const Color(0xFF1E88E5), // blue
-        MoodTrend.consistentlyBad => const Color(0xFFE53935), // red
-        MoodTrend.neutral => AppColors.primary,
-      };
+    MoodTrend.improvingFromBad => const Color(0xFF43A047), // green
+    MoodTrend.decliningFromGood => const Color(0xFFFF8F00), // amber
+    MoodTrend.consistentlyGood => const Color(0xFF1E88E5), // blue
+    MoodTrend.consistentlyBad => const Color(0xFFE53935), // red
+    MoodTrend.neutral => AppColors.primary,
+  };
 
   IconData get _icon => switch (mood.trend) {
-        MoodTrend.improvingFromBad => Icons.trending_up,
-        MoodTrend.decliningFromGood => Icons.favorite,
-        MoodTrend.consistentlyGood => Icons.celebration,
-        MoodTrend.consistentlyBad => Icons.self_improvement,
-        MoodTrend.neutral => Icons.wb_sunny,
-      };
+    MoodTrend.improvingFromBad => Icons.trending_up,
+    MoodTrend.decliningFromGood => Icons.favorite,
+    MoodTrend.consistentlyGood => Icons.celebration,
+    MoodTrend.consistentlyBad => Icons.self_improvement,
+    MoodTrend.neutral => Icons.wb_sunny,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -263,14 +258,14 @@ class _MoodCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _MoodTimeline extends StatelessWidget {
-  const _MoodTimeline({required this.statuses});
+  const _MoodTimeline({required this.points});
 
-  final List<String> statuses;
+  final List<MoodPoint> points;
 
   @override
   Widget build(BuildContext context) {
     // Reverse so oldest is on the left
-    final ordered = statuses.reversed.toList();
+    final ordered = points.reversed.toList();
 
     return Container(
       width: double.infinity,
@@ -301,10 +296,10 @@ class _MoodTimeline extends StatelessWidget {
                     color: AppColors.textTertiary.withValues(alpha: 0.3),
                   ),
                 _MoodDot(
-                  status: ordered[i],
-                  label: i == ordered.length - 1
+                  status: ordered[i].status,
+                  label: ordered[i].daysAgo == 0
                       ? 'Today'
-                      : '${ordered.length - i - 1}d ago',
+                      : '${ordered[i].daysAgo}d ago',
                 ),
               ],
             ],
@@ -325,7 +320,9 @@ class _MoodDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGreat = status == 'great';
     final color = isGreat ? AppColors.success : AppColors.warning;
-    final icon = isGreat ? Icons.sentiment_very_satisfied : Icons.sentiment_dissatisfied;
+    final icon = isGreat
+        ? Icons.sentiment_very_satisfied
+        : Icons.sentiment_dissatisfied;
 
     return Column(
       children: [
@@ -426,9 +423,7 @@ class _CalmModeBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
